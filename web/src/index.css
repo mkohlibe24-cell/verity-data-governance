@@ -1,0 +1,139 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens. One accent (blue), navy/slate neutrals, RAG colours only for status.
+   Text/background pairs are chosen to meet WCAG AA (4.5:1 for body text). */
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --border: #dce2ea;
+  --border-strong: #c3ccd8;
+  --text: #0f1b2d;
+  --text-muted: #4f5d73;
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-soft: #e6edfc;
+  --accent-fg: #ffffff;
+  --sidebar: #13233d;
+  --sidebar-text: #c5cfdd;
+  --sidebar-active: #22385c;
+  --green: #166534;
+  --green-soft: #dcf2e3;
+  --amber: #92400e;
+  --amber-soft: #fbeccc;
+  --red: #b42318;
+  --red-soft: #fbe2df;
+  --chart-grid: #e6eaf0;
+  --chart-1: #1d4ed8;
+  --chart-2: #64748b;
+  --chart-3: #94a3b8;
+  --chart-4: #0f1b2d;
+  --focus: #1d4ed8;
+}
+
+.dark {
+  --bg: #0b1220;
+  --surface: #111a2b;
+  --surface-2: #17223a;
+  --border: #233149;
+  --border-strong: #31425f;
+  --text: #e6ebf2;
+  --text-muted: #9eabbf;
+  --accent: #7aa5ff;
+  --accent-hover: #9dbcff;
+  --accent-soft: #1b2a47;
+  --accent-fg: #0b1220;
+  --sidebar: #0d1626;
+  --sidebar-text: #a9b6c9;
+  --sidebar-active: #1b2a47;
+  --green: #6fd394;
+  --green-soft: #12301f;
+  --amber: #f2c063;
+  --amber-soft: #36290f;
+  --red: #ff8f85;
+  --red-soft: #3b1714;
+  --chart-grid: #1f2b40;
+  --chart-1: #7aa5ff;
+  --chart-2: #8fa0b8;
+  --chart-3: #4f6180;
+  --chart-4: #e6ebf2;
+  --focus: #7aa5ff;
+}
+
+@theme inline {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* cmdk */
+[cmdk-item][data-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+[cmdk-group-heading] {
+  padding: 8px 12px 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
