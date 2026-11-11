@@ -1,0 +1,334 @@
+# Sentinel central configuration.
+# Every threshold used by the pipeline lives here (or in dq_rules.yaml) so that no
+# business number is hard-coded in Python. Changing a threshold = changing config,
+# which is reviewable in git history (a change-management control in itself).
+
+project:
+  name: "Sentinel - Data Quality, Governance & Transaction Monitoring Platform"
+  currency: USD
+  batch_as_of: "2020-12-31 23:59:59"   # business date this batch represents
+  period_start: "2019-01-01"           # first business date in scope (retention start)
+  report_month: "2020-12"              # month used for the monthly KRI report
+
+paths:
+  warehouse: warehouse/sentinel.duckdb
+  raw_zip: data/raw/kaggle_fraud.zip
+  raw_extract_dir: data/raw/kaggle
+  raw_files: [fraudTrain.csv, fraudTest.csv]
+  sample_file: data/sample/kaggle_sample.csv.gz
+  generated_file: data/generated/synthetic_rows.csv
+  reports_dir: reports
+  docs_dir: docs
+  logs_dir: logs
+
+security:
+  hash_salt_env_var: SENTINEL_HASH_SALT
+  demo_hash_salt: "sentinel-demo-salt-not-for-production"
+
+# ---------------------------------------------------------------------------
+# Synthetic generator: adds tagged rows ON TOP of the Kaggle data.
+#  - scenarios: risk patterns the Kaggle simulator does not contain
+#  - dq_defects: deliberately broken records so the DQ controls have something to catch
+# Counts are for full mode; sample mode multiplies them by sample_scale.
+# ---------------------------------------------------------------------------
+generator:
+  seed: 42
+  sample_scale: 0.1
+  unix_time_offset_seconds: 220881600   # mimics the source system's offset epoch (see DQ-K01)
+  scenarios:
+    card_testing: 40
+    velocity_burst: 40
+    impossible_travel: 40
+    round_amount_structuring: 30
+    dormant_reactivation: 25
+  dq_defects:
+    null_trans_num: 60
+    null_card_number: 80
+    null_amount: 120
+    null_timestamp: 80
+    null_merchant: 60
+    null_category: 60
+    missing_merchant_coords: 60
+    missing_fraud_label: 40
+    duplicate_record: 300
+    double_posting: 150
+    negative_amount: 150
+    extreme_amount: 40
+    bad_timestamp_format: 100
+    future_timestamp: 80
+    stale_timestamp: 60
+    invalid_category: 100
+    invalid_state: 80
+    invalid_coordinates: 60
+    invalid_card_number: 80
+    dob_after_transaction: 50
+    inconsistent_customer: 60
+    invalid_gender: 50
+    invalid_fraud_flag: 40
+
+# ---------------------------------------------------------------------------
+# Data quality engine
+# ---------------------------------------------------------------------------
+dq:
+  rules_file: config/dq_rules.yaml
+  decisions_file: config/steward_decisions.yaml
+  severity_sla_days: {critical: 5, high: 10, medium: 30, low: 60}
+  # Logical table name used in rules -> physical relation, record key and layer
+  tables:
+    transactions:      {relation: bronze.transactions_typed, key: bronze_row_id, layer: bronze}
+    fact_transactions: {relation: gold.fact_transactions,    key: trans_num,     layer: gold}
+    dim_customer:      {relation: gold.dim_customer,         key: card_token,    layer: gold}
+    dim_merchant:      {relation: gold.dim_merchant,         key: merchant_key,  layer: gold}
+  suggestions:
+    max_allowed_values: 25        # suggest an allowed-values rule if a text column has <= this many values
+    min_pattern_share: 0.999      # suggest a format rule if >= 99.9% of values share one pattern
+    unique_share: 0.9999          # suggest a uniqueness rule if distinct / non-null >= this
+    min_rows: 1000                # don't suggest rules from tiny samples
+
+reconciliation:
+  count_tolerance: 0       # record counts must tie exactly
+  amount_tolerance: 0.01   # USD; amount totals must tie to the cent
+
+# ---------------------------------------------------------------------------
+# Transaction monitoring rules (SQL files in sql/monitoring/). This block is also the
+# rule catalogue: risk addressed, plain-English logic and why each threshold was chosen.
+# ---------------------------------------------------------------------------
+monitoring:
+  rules_dir: sql/monitoring
+  alert_priority:   # combined (rule + ML) score -> priority tier
+    P1: 90
+    P2: 75
+    P3: 60
+  rules:
+    TM-01:
+      name: High value vs cardholder baseline
+      file: tm01_high_value_vs_baseline.sql
+      risk: Stolen card or account takeover used for unusually large purchases
+      logic: Amount is far above the same card's average over the previous 90 days
+      threshold_rationale: >-
+        4 standard deviations keeps normal spending variation out; the $500 floor ignores small
+        absolute amounts; 20 prior transactions are needed for a stable baseline.
+      severity: high
+      base_score: 70
+      owner: Fraud Monitoring Control Owner
+      frequency: Daily
+      params: {lookback_days: 90, min_history: 20, std_multiplier: 4, min_amount: 500}
+    TM-02:
+      name: Transaction velocity burst
+      file: tm02_velocity.sql
+      risk: Compromised card being drained quickly before it is blocked
+      logic: 5 or more transactions on the same card within 10 minutes
+      threshold_rationale: >-
+        Cardholders in the base data average about 2.5 transactions a day, so 5 in 10 minutes is
+        far outside normal behaviour.
+      severity: high
+      base_score: 70
+      owner: Fraud Monitoring Control Owner
+      frequency: Daily
+      params: {window_minutes: 10, min_txns: 5}
+    TM-03:
+      name: Impossible travel
+      file: tm03_impossible_travel.sql
+      risk: Card details used in two distant places by different people (counterfeit / CNP fraud)
+      logic: Consecutive transactions more than 500 km apart at an implied speed above 800 km/h
+      threshold_rationale: >-
+        800 km/h is roughly airliner speed. Merchant geocodes in this source can sit up to about
+        150 km from the cardholder's home, so a 500 km minimum avoids false hits from geocode noise.
+      severity: critical
+      base_score: 85
+      owner: Fraud Monitoring Control Owner
+      frequency: Daily
+      params: {min_distance_km: 500, max_speed_kmh: 800, min_hours: 0.0167}
+    TM-04:
+      name: Card testing pattern
+      file: tm04_card_testing.sql
+      risk: Fraudster testing stolen card numbers with tiny purchases before a large one
+      logic: 5 or more transactions under $5 on the same card within 30 minutes
+      threshold_rationale: >-
+        Small purchases are common on their own (10% of legitimate spend is under $4.08), but
+        several in a short window is the classic testing signature.
+      severity: high
+      base_score: 75
+      owner: Fraud Monitoring Control Owner
+      frequency: Daily
+      params: {small_amount: 5, window_minutes: 30, min_small_txns: 5}
+    TM-05:
+      name: Round-amount structuring
+      file: tm05_round_amount_structuring.sql
+      risk: Splitting value into round amounts just below a $1,000 review threshold
+      logic: 3 or more round-dollar transactions between $800 and $999.99 within 48 hours
+      threshold_rationale: >-
+        Amounts that are multiples of $10 just under $1,000 are rare in the base data (87 rows are
+        exact multiples of $100), so repeated ones signal deliberate splitting.
+      severity: medium
+      base_score: 60
+      owner: Financial Crime Compliance Control Owner
+      frequency: Daily
+      params: {lower: 800, upper: 999.99, round_unit: 10, window_hours: 48, min_txns: 3}
+    TM-06:
+      name: Unusual hour high spend
+      file: tm06_unusual_hour.sql
+      risk: Card used at night, when the genuine cardholder is less likely to be active
+      logic: Transaction between 22:00 and 03:59 that is 3x the card's 90-day average and at least $200
+      threshold_rationale: >-
+        Night-time transactions alone are common (about 20% of volume), so the rule also needs a
+        spend spike relative to the cardholder's own history.
+      severity: medium
+      base_score: 60
+      owner: Fraud Monitoring Control Owner
+      frequency: Daily
+      params: {night_start: 22, night_end: 4, lookback_days: 90, min_history: 20, multiplier: 3, min_amount: 200}
+    TM-07:
+      name: Dormant account reactivation
+      file: tm07_dormant_reactivation.sql
+      risk: Takeover of an inactive account that the owner is not watching
+      logic: First 48 hours of activity after a gap of 60+ days, for transactions of $200 or more
+      threshold_rationale: >-
+        The longest natural gap between transactions in the base data is 16 days, so 60 days is
+        clearly dormant; $200 filters out low-risk small purchases.
+      severity: high
+      base_score: 70
+      owner: Fraud Monitoring Control Owner
+      frequency: Daily
+      params: {dormant_days: 60, window_hours: 48, min_amount: 200}
+    TM-08:
+      name: Merchant-category amount outlier
+      file: tm08_category_outlier.sql
+      risk: Purchase far above what is normal for that type of merchant (peer comparison)
+      logic: Amount above the 99.5th percentile for its merchant category (baseline before Jul 2020)
+      threshold_rationale: >-
+        A peer (population) baseline complements TM-01's individual baseline. The percentile is
+        computed only on data before the test period, so the rule never learns from the future.
+      severity: medium
+      base_score: 65
+      owner: Fraud Monitoring Control Owner
+      frequency: Daily
+      params: {percentile: 0.995, baseline_end: "2020-07-01", min_amount: 300}
+
+# ---------------------------------------------------------------------------
+# Machine learning (kept light): time-based split, no future data in training.
+# ---------------------------------------------------------------------------
+ml:
+  train_end: "2020-06-01"        # train:      txn_ts <  train_end
+  validation_end: "2020-07-01"   # validation: train_end <= txn_ts < validation_end (threshold choice)
+  # test:       txn_ts >= validation_end (Jul-Dec 2020, never used for any choice)
+  cost_false_positive: 15        # USD: analyst time to review one alert
+  # cost of a missed fraud = the transaction amount (the loss)
+  lightgbm:
+    n_estimators: 400
+    learning_rate: 0.05
+    num_leaves: 63
+    min_child_samples: 50
+    subsample: 0.8
+    subsample_freq: 1
+    colsample_bytree: 0.8
+    scale_pos_weight: 5
+    random_state: 42
+  isolation_forest:
+    n_estimators: 200
+    max_samples: 256
+    fit_sample_rows: 200000
+    random_state: 42
+  top_reasons: 3
+
+# ---------------------------------------------------------------------------
+# Key Risk Indicators. Thresholds were set BEFORE looking at results.
+# direction: higher_is_better or lower_is_better
+# ---------------------------------------------------------------------------
+kris:
+  - id: KRI-01
+    name: CDE data quality pass rate
+    category: Data Quality
+    unit: "%"
+    direction: higher_is_better
+    amber: 99.5
+    red: 98.0
+    period: Latest pipeline run
+    formula: 1 - (records failing CDE rules / records checked by CDE rules)
+    rationale: Critical Data Elements feed fraud monitoring and reporting; below 98% the alerts and reports become unreliable.
+    escalation: Red - Data Owner notified same day; affected reports marked provisional until fixed.
+    owner: Card Transactions Data Owner
+  - id: KRI-02
+    name: Open critical/high DQ issues
+    category: Data Quality
+    unit: count
+    direction: lower_is_better
+    amber: 3
+    red: 6
+    period: Latest pipeline run
+    formula: Count of issue-log items with severity critical or high and status Open
+    rationale: A small backlog is normal; six or more means remediation is not keeping up.
+    escalation: Red - escalate to the Data Governance Council; owners present remediation dates.
+    owner: Head of Data Governance
+  - id: KRI-03
+    name: Reconciliation breaks
+    category: Data Quality
+    unit: count
+    direction: lower_is_better
+    amber: 1
+    red: 2
+    period: Latest pipeline run
+    formula: Count of reconciliation controls with status BREAK
+    rationale: Counts and amounts must tie between layers; any break means data was lost or duplicated.
+    escalation: Amber - investigate before publishing; Red - stop downstream publication.
+    owner: Data Engineering Lead
+  - id: KRI-04
+    name: Quarantine rate
+    category: Data Quality
+    unit: "%"
+    direction: lower_is_better
+    amber: 0.5
+    red: 1.0
+    period: Latest pipeline run
+    formula: Quarantined records / bronze records
+    rationale: Above 1% suggests a systemic upstream problem rather than isolated bad records.
+    escalation: Red - raise with the source system owner and open a root-cause investigation.
+    owner: Transaction Data Steward
+  - id: KRI-05
+    name: Data contract compliance
+    category: Data Quality
+    unit: "%"
+    direction: higher_is_better
+    amber: 100
+    red: 95
+    period: Latest pipeline run
+    formula: Contract clauses passed / contract clauses checked (all gold data products)
+    rationale: Consumers rely on contracts; any breach must be visible, repeated breaches are red.
+    escalation: Red - notify data product consumers and freeze schema changes.
+    owner: Data Product Owner
+  - id: KRI-06
+    name: Alert false-positive rate
+    category: Monitoring
+    unit: "%"
+    direction: lower_is_better
+    amber: 90
+    red: 97
+    period: Report month
+    formula: Alerts that were not fraud / all alerts (hybrid rules + ML)
+    rationale: Card monitoring typically runs at high false-positive rates; above 97% analysts drown in noise (alert fatigue).
+    escalation: Red - rule tuning review with the Fraud Monitoring Control Owner.
+    owner: Fraud Monitoring Control Owner
+  - id: KRI-07
+    name: Fraud detection rate
+    category: Monitoring
+    unit: "%"
+    direction: higher_is_better
+    amber: 85
+    red: 70
+    period: Report month
+    formula: Fraud transactions alerted / all fraud transactions
+    rationale: Below 70% the detective control is not catching most fraud.
+    escalation: Red - urgent model/rule review and 2nd-line notification.
+    owner: Fraud Monitoring Control Owner
+  - id: KRI-08
+    name: Undetected fraud loss
+    category: Monitoring
+    unit: bps
+    direction: lower_is_better
+    amber: 10
+    red: 25
+    period: Report month
+    formula: Fraud amount not alerted / total spend, in basis points (1 bp = 0.01%)
+    rationale: Industry card fraud losses are in single-digit bps of spend; well above that needs action.
+    escalation: Red - loss review with Finance and the Fraud Monitoring Control Owner.
+    owner: Fraud Monitoring Control Owner

@@ -1,0 +1,11 @@
+# Pinned versions verified on Python 3.13 (Windows 11), 11 Nov 2026
+duckdb==2.0.0
+pandas==3.1.1
+numpy==2.5.4
+pyarrow==26.0.1
+scikit-learn==1.9.1
+lightgbm==4.7.0
+PyYAML==6.0.3
+openpyxl==3.1.5
+pytest==9.2.0
+ruff==0.17.4

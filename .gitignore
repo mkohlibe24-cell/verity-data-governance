@@ -1,0 +1,33 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+web/test-results/
+web/playwright-report/
+
+# Secrets
+.env
+.env.*
+
+# Data: raw Kaggle files are large (500 MB); a CC0 sample lives in data/sample/
+data/raw/
+data/generated/
+warehouse/
+*.duckdb
+*.duckdb.wal
+
+# Logs
+logs/
+*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

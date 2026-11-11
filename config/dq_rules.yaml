@@ -1,0 +1,596 @@
+# Sentinel data quality rules.
+#
+# Each rule is a CONTROL: it has an owner, a tolerance threshold and a severity.
+#   table          logical table (mapped to a physical relation in config.yaml -> dq.tables)
+#   dimension      Completeness | Validity | Accuracy | Uniqueness | Consistency | Timeliness
+#   check          not_null | regex | allowed_values | range | expression | unique |
+#                  group_consistency | referential | freshness | daily_volume
+#   threshold_pct  maximum % of failing records tolerated before the rule FAILS
+#   action         quarantine = failing records are blocked from silver (PREVENTIVE control)
+#                  flag       = records continue with a warning flag (DETECTIVE control)
+#   is_cde         true if the column is a Critical Data Element
+#   reason_code    short code written next to each quarantined record
+#   root_cause_hint / remediation are copied into the issue log when the rule fails.
+#
+# Expressions can use {{as_of}} and {{period_start}}, filled from config.yaml.
+
+rules:
+  # ---------------------------------------------------------------- Completeness
+  - id: DQ-C01
+    name: Transaction ID is populated
+    table: transactions
+    column: trans_num
+    dimension: Completeness
+    check: not_null
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: quarantine
+    reason_code: NULL_TRANS_ID
+    owner: Card Transactions Data Owner
+    root_cause_hint: Source extract allows records without a transaction identifier (no NOT NULL constraint at capture).
+    remediation: Add a mandatory-field check in the source extract; request re-send of affected records.
+  - id: DQ-C02
+    name: Card number is populated
+    table: transactions
+    column: cc_num
+    dimension: Completeness
+    check: not_null
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: quarantine
+    reason_code: NULL_CARD
+    owner: Card Transactions Data Owner
+    root_cause_hint: Card number dropped during upstream tokenisation or extract mapping.
+    remediation: Reconcile against the card authorisation log and backfill; add a mapping test upstream.
+  - id: DQ-C03
+    name: Transaction amount is populated
+    table: transactions
+    column: amt_raw
+    dimension: Completeness
+    check: not_null
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: quarantine
+    reason_code: NULL_AMOUNT
+    owner: Card Transactions Data Owner
+    root_cause_hint: Amount field empty in the source file, likely from failed currency conversion upstream.
+    remediation: Re-extract affected records from the settlement system; alert on empty amounts at source.
+  - id: DQ-C04
+    name: Transaction timestamp is populated
+    table: transactions
+    column: txn_ts_raw
+    dimension: Completeness
+    check: not_null
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: quarantine
+    reason_code: NULL_TIMESTAMP
+    owner: Card Transactions Data Owner
+    root_cause_hint: Timestamp not captured for some records in the source extract.
+    remediation: Backfill timestamps from the authorisation log; make the field mandatory in the extract.
+  - id: DQ-C05
+    name: Merchant name is populated
+    table: transactions
+    column: merchant
+    dimension: Completeness
+    check: not_null
+    threshold_pct: 0.0
+    severity: high
+    is_cde: true
+    action: quarantine
+    reason_code: NULL_MERCHANT
+    owner: Merchant Data Steward
+    root_cause_hint: Merchant descriptor missing when the acquirer message is incomplete.
+    remediation: Enrich from the merchant master using merchant ID; raise with acquirer operations.
+  - id: DQ-C06
+    name: Merchant category is populated
+    table: transactions
+    column: category
+    dimension: Completeness
+    check: not_null
+    threshold_pct: 0.0
+    severity: high
+    is_cde: true
+    action: quarantine
+    reason_code: NULL_CATEGORY
+    owner: Merchant Data Steward
+    root_cause_hint: Category not mapped for new merchants added after the last reference-data refresh.
+    remediation: Refresh merchant-category reference data; add an unmapped-category alert.
+  - id: DQ-C07
+    name: Merchant coordinates are populated
+    table: transactions
+    columns: [merch_lat, merch_long]
+    column: merch_lat
+    dimension: Completeness
+    check: not_null
+    threshold_pct: 0.1
+    severity: medium
+    is_cde: false
+    action: flag
+    reason_code: NULL_MERCHANT_GEO
+    owner: Merchant Data Steward
+    root_cause_hint: Geocoding service returned no result for some merchant addresses.
+    remediation: Re-run geocoding for affected merchants; fall back to postcode centroid.
+  - id: DQ-C08
+    name: Fraud label is populated
+    table: transactions
+    column: is_fraud_raw
+    dimension: Completeness
+    check: not_null
+    threshold_pct: 0.01
+    severity: medium
+    is_cde: true
+    action: flag
+    reason_code: NULL_FRAUD_LABEL
+    owner: Fraud Analytics Model Owner
+    root_cause_hint: Chargeback/fraud outcome not yet received when the extract was taken.
+    remediation: Exclude unlabelled records from model training; refresh labels after the chargeback window.
+  - id: DQ-C09
+    name: Every business day has transaction volume
+    table: transactions
+    column: txn_ts
+    dimension: Completeness
+    check: daily_volume
+    params: {min_rows: 500}
+    threshold_pct: 0.0
+    severity: high
+    is_cde: false
+    action: flag
+    reason_code: LOW_DAILY_VOLUME
+    owner: Data Engineering Lead
+    root_cause_hint: A daily file was missed or only partially loaded.
+    remediation: Re-run the load for the affected days; add file-arrival monitoring.
+
+  # ---------------------------------------------------------------- Validity
+  - id: DQ-V01
+    name: Transaction timestamp is a valid date-time
+    table: transactions
+    column: txn_ts_raw
+    dimension: Validity
+    check: expression
+    fail_if: "txn_ts_raw IS NOT NULL AND txn_ts IS NULL"
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: quarantine
+    reason_code: BAD_TIMESTAMP_FORMAT
+    owner: Card Transactions Data Owner
+    root_cause_hint: Mixed date formats from a regional source system (e.g. DD/MM/YYYY).
+    remediation: Standardise to ISO-8601 at source; add a format check to the extract job.
+  - id: DQ-V02
+    name: Transaction amount is positive
+    table: transactions
+    column: amount
+    dimension: Validity
+    check: range
+    params: {min: 0.01}
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: quarantine
+    reason_code: NON_POSITIVE_AMOUNT
+    owner: Card Transactions Data Owner
+    root_cause_hint: Refunds/reversals are mixed into the purchase feed with negative signs.
+    remediation: Route reversals to a separate feed with their own transaction type; confirm with Finance.
+  - id: DQ-V03
+    name: Transaction amount below sanity ceiling
+    table: transactions
+    column: amount
+    dimension: Validity
+    check: range
+    params: {max: 50000}
+    threshold_pct: 0.01
+    severity: high
+    is_cde: true
+    action: flag
+    reason_code: EXTREME_AMOUNT
+    owner: Card Transactions Data Owner
+    root_cause_hint: Amount captured in minor units (cents) instead of dollars, or a keying error.
+    remediation: Confirm currency/unit with the source owner; correct and re-send.
+  - id: DQ-V04
+    name: Merchant category is a recognised code
+    table: transactions
+    column: category
+    dimension: Validity
+    check: allowed_values
+    params:
+      values: [entertainment, food_dining, gas_transport, grocery_net, grocery_pos, health_fitness,
+               home, kids_pets, misc_net, misc_pos, personal_care, shopping_net, shopping_pos, travel]
+    threshold_pct: 0.0
+    severity: high
+    is_cde: true
+    action: quarantine
+    reason_code: INVALID_CATEGORY
+    owner: Merchant Data Steward
+    root_cause_hint: Free-text or legacy category codes not mapped to the reference list.
+    remediation: Map legacy codes in the reference table; reject unknown codes at source.
+  - id: DQ-V05
+    name: Cardholder state is a valid US state code
+    table: transactions
+    column: state
+    dimension: Validity
+    check: allowed_values
+    params:
+      values: [AK, AL, AR, AZ, CA, CO, CT, DC, DE, FL, GA, HI, IA, ID, IL, IN, KS, KY, LA, MA, MD, ME,
+               MI, MN, MO, MS, MT, NC, ND, NE, NH, NJ, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TN, TX,
+               UT, VA, VT, WA, WI, WV, WY]
+    threshold_pct: 0.01
+    severity: medium
+    is_cde: false
+    action: flag
+    reason_code: INVALID_STATE
+    owner: Customer Data Steward
+    root_cause_hint: Address captured as free text at onboarding (e.g. "Calif").
+    remediation: Validate address against postal reference data at onboarding; cleanse existing records.
+  - id: DQ-V06
+    name: ZIP code is 5 digits
+    table: transactions
+    column: zip
+    dimension: Validity
+    check: regex
+    params: {pattern: "[0-9]{5}"}
+    threshold_pct: 1.0
+    severity: medium
+    is_cde: false
+    action: flag
+    reason_code: BAD_ZIP_FORMAT
+    owner: Customer Data Steward
+    root_cause_hint: ZIP stored as a number upstream, so leading zeros are lost (e.g. 01234 becomes 1234).
+    remediation: Store ZIP as text at source. Interim fix applied in silver (left-pad to 5 digits).
+  - id: DQ-V07
+    name: Coordinates are within valid ranges
+    table: transactions
+    column: merch_lat
+    dimension: Validity
+    check: expression
+    fail_if: "merch_lat NOT BETWEEN -90 AND 90 OR merch_long NOT BETWEEN -180 AND 180 OR home_lat NOT BETWEEN -90 AND 90 OR home_long NOT BETWEEN -180 AND 180"
+    threshold_pct: 0.0
+    severity: high
+    is_cde: false
+    action: quarantine
+    reason_code: INVALID_COORDINATES
+    owner: Merchant Data Steward
+    root_cause_hint: Latitude and longitude swapped or corrupted by the geocoding batch.
+    remediation: Re-geocode affected records; add range validation to the geocoding job.
+  - id: DQ-V08
+    name: Gender uses the agreed code set
+    table: transactions
+    column: gender
+    dimension: Validity
+    check: allowed_values
+    params: {values: [F, M]}
+    threshold_pct: 0.01
+    severity: low
+    is_cde: false
+    action: flag
+    reason_code: INVALID_GENDER
+    owner: Customer Data Steward
+    root_cause_hint: Onboarding channel uses a different code set from the data standard.
+    remediation: Align the onboarding code set with the enterprise data standard.
+  - id: DQ-V09
+    name: Fraud label is 0 or 1
+    table: transactions
+    column: is_fraud_raw
+    dimension: Validity
+    check: allowed_values
+    params: {values: ["0", "1"]}
+    threshold_pct: 0.0
+    severity: high
+    is_cde: true
+    action: quarantine
+    reason_code: INVALID_FRAUD_LABEL
+    owner: Fraud Analytics Model Owner
+    root_cause_hint: Case-management export writes free-text outcomes instead of the 0/1 flag.
+    remediation: Fix the export mapping; validate labels before they reach the warehouse.
+  - id: DQ-V10
+    name: Card number passes the Luhn check digit
+    table: transactions
+    column: cc_num
+    dimension: Validity
+    check: expression
+    fail_if: "cc_num IS NOT NULL AND NOT luhn_valid(cc_num)"
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: quarantine
+    reason_code: CARD_FAILS_LUHN
+    owner: Card Transactions Data Owner
+    root_cause_hint: Card number truncated or mistyped during manual entry or file transfer.
+    remediation: Reject at capture with a Luhn check; trace affected records to the originating channel.
+  - id: DQ-V11
+    name: Card number has a valid length (12-19 digits)
+    table: transactions
+    column: cc_num
+    dimension: Validity
+    check: expression
+    fail_if: "cc_num IS NOT NULL AND length(cc_num) NOT BETWEEN 12 AND 19"
+    threshold_pct: 0.1
+    severity: medium
+    is_cde: true
+    action: flag
+    reason_code: BAD_CARD_LENGTH
+    owner: Card Transactions Data Owner
+    root_cause_hint: Card number stored as an integer upstream, so a leading zero is dropped.
+    remediation: Store card numbers as text end to end; confirm affected cards with the issuer system.
+  - id: DQ-V12
+    name: Transaction ID is a 32-character hex value
+    table: transactions
+    column: trans_num
+    dimension: Validity
+    check: regex
+    params: {pattern: "[0-9a-f]{32}"}
+    threshold_pct: 0.0
+    severity: medium
+    is_cde: true
+    action: flag
+    reason_code: BAD_TRANS_ID_FORMAT
+    owner: Card Transactions Data Owner
+    root_cause_hint: Identifiers generated by a different system version.
+    remediation: Align ID generation with the standard; map legacy IDs.
+
+  # ---------------------------------------------------------------- Accuracy
+  - id: DQ-A01
+    name: Cardholder is an adult at transaction date
+    table: transactions
+    column: dob
+    dimension: Accuracy
+    check: expression
+    fail_if: "dob IS NOT NULL AND txn_ts IS NOT NULL AND dob <= CAST(txn_ts AS DATE) AND date_diff('year', dob, CAST(txn_ts AS DATE)) < 18"
+    threshold_pct: 0.5
+    severity: medium
+    is_cde: false
+    action: flag
+    reason_code: CARDHOLDER_UNDER_18
+    owner: Customer Data Steward
+    root_cause_hint: Supplementary cards for minors are mixed with primary cardholders, or DOB keyed wrongly.
+    remediation: Confirm card relationship type (primary vs supplementary) and add it to the feed.
+  - id: DQ-A02
+    name: Merchant within plausible distance of cardholder home
+    table: transactions
+    column: merch_lat
+    dimension: Accuracy
+    check: expression
+    fail_if: "merch_lat BETWEEN -90 AND 90 AND merch_long BETWEEN -180 AND 180 AND haversine_km(home_lat, home_long, merch_lat, merch_long) > 250"
+    threshold_pct: 0.1
+    severity: low
+    is_cde: false
+    action: flag
+    reason_code: MERCHANT_FAR_FROM_HOME
+    owner: Merchant Data Steward
+    root_cause_hint: Merchant geocode points to head-office address, or genuine travel / fraud (route to monitoring).
+    remediation: Review geocodes for flagged merchants; distant genuine activity is handled by monitoring rule TM-03.
+
+  # ---------------------------------------------------------------- Uniqueness
+  - id: DQ-U01
+    name: Transaction ID is unique
+    table: transactions
+    column: trans_num
+    dimension: Uniqueness
+    check: unique
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: quarantine
+    reason_code: DUPLICATE_TRANS_ID
+    owner: Card Transactions Data Owner
+    root_cause_hint: The same file (or part of it) was delivered twice by the source system.
+    remediation: Make the load idempotent on trans_num; add a file-level duplicate check.
+  - id: DQ-U02
+    name: No double posting (same card, time, amount, merchant)
+    table: transactions
+    columns: [cc_num, txn_ts_raw, amt_raw, merchant]
+    column: cc_num
+    dimension: Uniqueness
+    check: unique
+    threshold_pct: 0.0
+    severity: high
+    is_cde: true
+    action: quarantine
+    reason_code: DOUBLE_POSTING
+    owner: Card Transactions Data Owner
+    root_cause_hint: Retry logic in the authorisation switch re-sent the transaction with a new ID.
+    remediation: Deduplicate on business key at source; investigate switch retry behaviour.
+
+  # ---------------------------------------------------------------- Consistency
+  - id: DQ-K01
+    name: unix_time agrees with the transaction timestamp
+    table: transactions
+    column: unix_time
+    dimension: Consistency
+    check: expression
+    fail_if: "unix_time IS NOT NULL AND txn_ts IS NOT NULL AND abs(epoch(txn_ts) - unix_time) > 86400"
+    threshold_pct: 1.0
+    severity: low
+    is_cde: false
+    action: flag
+    flag_in_silver: false
+    reason_code: UNIX_TIME_MISMATCH
+    owner: Card Transactions Data Owner
+    root_cause_hint: The source system populates unix_time from a different epoch, so every value is offset by about 7 years.
+    remediation: Treat trans_date_trans_time as authoritative; unix_time excluded from gold; ask the source owner to fix or retire the field.
+  - id: DQ-K02
+    name: Date of birth is consistent for each card
+    table: transactions
+    column: dob_raw
+    dimension: Consistency
+    check: group_consistency
+    params: {group_by: cc_num}
+    threshold_pct: 0.0
+    severity: high
+    is_cde: false
+    action: flag
+    reason_code: INCONSISTENT_CUSTOMER
+    owner: Customer Data Steward
+    root_cause_hint: Customer master and card system hold different versions of the customer record.
+    remediation: Reconcile customer master against the card system; agree the golden source for DOB.
+  - id: DQ-K03
+    name: Date of birth is before the transaction date
+    table: transactions
+    column: dob
+    dimension: Consistency
+    check: expression
+    fail_if: "dob IS NOT NULL AND txn_ts IS NOT NULL AND dob > CAST(txn_ts AS DATE)"
+    threshold_pct: 0.0
+    severity: high
+    is_cde: false
+    action: quarantine
+    reason_code: DOB_AFTER_TXN
+    owner: Customer Data Steward
+    root_cause_hint: Date of birth keyed incorrectly (wrong century or day/month swapped).
+    remediation: Validate DOB at onboarding; correct affected customer records.
+  - id: DQ-K04
+    name: Each merchant maps to one category
+    table: transactions
+    column: category
+    dimension: Consistency
+    check: group_consistency
+    params: {group_by: merchant}
+    threshold_pct: 0.5
+    severity: low
+    is_cde: false
+    action: flag
+    reason_code: MERCHANT_MULTI_CATEGORY
+    owner: Merchant Data Steward
+    root_cause_hint: Merchant names are not unique (different merchants share a name) and there is no merchant ID.
+    remediation: Request the acquirer merchant ID in the feed and use it as the merchant key.
+
+  # ---------------------------------------------------------------- Timeliness
+  - id: DQ-T01
+    name: No future-dated transactions
+    table: transactions
+    column: txn_ts
+    dimension: Timeliness
+    check: expression
+    fail_if: "txn_ts > TIMESTAMP '{{as_of}}'"
+    threshold_pct: 0.0
+    severity: high
+    is_cde: true
+    action: quarantine
+    reason_code: FUTURE_DATED
+    owner: Card Transactions Data Owner
+    root_cause_hint: Source system clock or time-zone misconfiguration.
+    remediation: Fix the source clock/time zone; re-send affected records.
+  - id: DQ-T02
+    name: Batch is fresh (latest record within 1 day of as-of date)
+    table: transactions
+    column: txn_ts
+    dimension: Timeliness
+    check: freshness
+    params: {max_lag_hours: 24}
+    threshold_pct: 0.0
+    severity: high
+    is_cde: false
+    action: flag
+    reason_code: STALE_BATCH
+    owner: Data Engineering Lead
+    root_cause_hint: Upstream job delayed or failed silently.
+    remediation: Add job-completion monitoring; re-run the extract.
+  - id: DQ-T03
+    name: No records before the retention start date
+    table: transactions
+    column: txn_ts
+    dimension: Timeliness
+    check: expression
+    fail_if: "txn_ts < TIMESTAMP '{{period_start}}'"
+    threshold_pct: 0.0
+    severity: high
+    is_cde: true
+    action: quarantine
+    reason_code: STALE_RECORD
+    owner: Card Transactions Data Owner
+    root_cause_hint: Default dates (e.g. 1970-01-01) written when the real date is unknown.
+    remediation: Stop defaulting unknown dates at source; send NULL and fix the capture.
+
+  # ---------------------------------------------------------------- Gold layer (detective)
+  - id: DQ-G01
+    name: Gold fact has a unique transaction ID
+    table: fact_transactions
+    column: trans_num
+    dimension: Uniqueness
+    check: unique
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: flag
+    reason_code: GOLD_DUPLICATE
+    owner: Data Product Owner
+    root_cause_hint: Deduplication in silver bypassed.
+    remediation: Investigate the silver build; rebuild gold.
+  - id: DQ-G02
+    name: Every gold transaction links to a customer
+    table: fact_transactions
+    column: card_token
+    dimension: Consistency
+    check: referential
+    params: {ref_relation: gold.dim_customer, ref_column: card_token}
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: flag
+    reason_code: ORPHAN_CUSTOMER
+    owner: Data Product Owner
+    root_cause_hint: Dimension built from a different filter than the fact.
+    remediation: Build dimensions from the same silver snapshot as the fact.
+  - id: DQ-G03
+    name: Every gold transaction links to a merchant
+    table: fact_transactions
+    column: merchant_key
+    dimension: Consistency
+    check: referential
+    params: {ref_relation: gold.dim_merchant, ref_column: merchant_key}
+    threshold_pct: 0.0
+    severity: high
+    is_cde: false
+    action: flag
+    reason_code: ORPHAN_MERCHANT
+    owner: Data Product Owner
+    root_cause_hint: Dimension built from a different filter than the fact.
+    remediation: Build dimensions from the same silver snapshot as the fact.
+  - id: DQ-G04
+    name: Customer dimension has one row per card
+    table: dim_customer
+    column: card_token
+    dimension: Uniqueness
+    check: unique
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: flag
+    reason_code: GOLD_DUPLICATE_CARD
+    owner: Data Product Owner
+    root_cause_hint: Hash collision or inconsistent attributes splitting a card into two rows.
+    remediation: Investigate the dimension build; check the hashing input.
+  - id: DQ-G05
+    name: Card numbers are masked in gold (PII control)
+    table: dim_customer
+    column: card_number_masked
+    dimension: Validity
+    check: regex
+    params: {pattern: "\\*+[0-9]{4}"}
+    threshold_pct: 0.0
+    severity: critical
+    is_cde: true
+    action: flag
+    reason_code: UNMASKED_PAN
+    owner: Head of Data Governance
+    root_cause_hint: Masking step skipped or changed.
+    remediation: Stop publication; fix masking; report a potential data-protection incident.
+  - id: DQ-G06
+    name: Gold amounts are positive
+    table: fact_transactions
+    column: amount
+    dimension: Validity
+    check: range
+    params: {min: 0.01}
+    threshold_pct: 0.0
+    severity: high
+    is_cde: true
+    action: flag
+    reason_code: GOLD_BAD_AMOUNT
+    owner: Data Product Owner
+    root_cause_hint: Quarantine step bypassed.
+    remediation: Investigate the silver build; rebuild gold.
