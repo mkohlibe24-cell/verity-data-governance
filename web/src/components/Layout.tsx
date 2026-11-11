@@ -94,9 +94,9 @@ function RoleSwitcher() {
         >
           <UserRound className="h-4 w-4 text-muted" aria-hidden />
           <span className="hidden text-left sm:block">
-            <span className="block leading-tight font-medium">{user?.name ?? "Select user"}</span>
+            <span className="block leading-tight font-medium whitespace-nowrap">{user?.name ?? "Select user"}</span>
           </span>
-          <span className="hidden text-xs text-muted lg:inline">{user?.title}</span>
+          <span className="hidden text-xs whitespace-nowrap text-muted xl:inline">{user?.title}</span>
           <ChevronDown className="h-3.5 w-3.5 text-muted" aria-hidden />
         </button>
       </Dropdown.Trigger>
