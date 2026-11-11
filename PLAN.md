@@ -1,4 +1,4 @@
-# PLAN: Sentinel - Data Quality, Governance & Transaction Monitoring Platform
+# PLAN: Verity – Data Quality, Governance & Transaction Monitoring Platform
 
 **Positioning.** Data governance and data quality are the headline. Transaction monitoring is
 one data product built on top of well-governed data. Designed around the American Express
@@ -33,10 +33,10 @@ Kaggle CSVs (CC0) + generator rows (tagged)
 
 ## Decisions and defaults
 
-- Project folder renamed to `C:\Users\HP\Desktop\sentinel-data-governance` to match the repo name (shortcut updated).
+- Project folder renamed to `C:\Users\HP\Desktop\verity-data-governance` to match the repo name (shortcut updated).
 - Python 3.13 venv (3.12 fallback if a library breaks). Amounts in USD. Batch as-of date
   2020-12-31 23:59:59, report month December 2020.
-- Card numbers are hashed with salted SHA-256 (salt from the `SENTINEL_HASH_SALT` environment
+- Card numbers are hashed with salted SHA-256 (salt from the `VERITY_HASH_SALT` environment
   variable, demo default otherwise). Names masked, DOB generalised to birth year, street removed.
 - Generator rows are tagged (`is_synthetic`, `synthetic_tag`). Injected risk scenarios are
   labelled `is_fraud = 1` for evaluation. Headline ML results are reported on the original

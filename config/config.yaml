@@ -1,17 +1,17 @@
-# Sentinel central configuration.
+# Verity central configuration.
 # Every threshold used by the pipeline lives here (or in dq_rules.yaml) so that no
 # business number is hard-coded in Python. Changing a threshold = changing config,
 # which is reviewable in git history (a change-management control in itself).
 
 project:
-  name: "Sentinel - Data Quality, Governance & Transaction Monitoring Platform"
+  name: "Verity – Data Quality, Governance & Transaction Monitoring Platform"
   currency: USD
   batch_as_of: "2020-12-31 23:59:59"   # business date this batch represents
   period_start: "2019-01-01"           # first business date in scope (retention start)
   report_month: "2020-12"              # month used for the monthly KRI report
 
 paths:
-  warehouse: warehouse/sentinel.duckdb
+  warehouse: warehouse/verity.duckdb
   raw_zip: data/raw/kaggle_fraud.zip
   raw_extract_dir: data/raw/kaggle
   raw_files: [fraudTrain.csv, fraudTest.csv]
@@ -22,8 +22,8 @@ paths:
   logs_dir: logs
 
 security:
-  hash_salt_env_var: SENTINEL_HASH_SALT
-  demo_hash_salt: "sentinel-demo-salt-not-for-production"
+  hash_salt_env_var: VERITY_HASH_SALT
+  demo_hash_salt: "verity-demo-salt-not-for-production"
 
 # ---------------------------------------------------------------------------
 # Synthetic generator: adds tagged rows ON TOP of the Kaggle data.

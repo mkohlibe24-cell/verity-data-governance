@@ -1,4 +1,4 @@
-# Sentinel data quality rules.
+# Verity data quality rules.
 #
 # Each rule is a CONTROL: it has an owner, a tolerance threshold and a severity.
 #   table          logical table (mapped to a physical relation in config.yaml -> dq.tables)

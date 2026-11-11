@@ -1,5 +1,5 @@
 [project]
-name = "sentinel-data-governance"
+name = "verity-data-governance"
 version = "0.1.0"
 description = "Data quality, governance and transaction monitoring platform (portfolio project)"
 requires-python = ">=3.12"
