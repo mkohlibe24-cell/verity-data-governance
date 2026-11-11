@@ -1,4 +1,27 @@
 # Data steward decisions on automatically suggested DQ rules (human-in-the-loop).
 # Written by pipeline/steward.py or the web app. Approved rules are loaded by the DQ engine
 # on the next run. Do not edit by hand: git history of this file is the audit trail.
-decisions: []
+decisions:
+- suggestion_id: SUG-8DAE34
+  decision: rejected
+  decided_by: Muskaan Kohli
+  decided_at: '2026-11-11T18:02:41'
+  reason: Range learned from corrupted records
+  rule:
+    name: 'Suggested: merch_lat range'
+    table: transactions
+    column: merch_lat
+    dimension: Validity
+    check: range
+    params:
+      min: 19
+      max: 192
+    threshold_pct: 0.1
+    severity: medium
+    is_cde: false
+    action: flag
+    owner: Transaction Data Steward
+    reason_code: SUGGESTED_RANGE
+    root_cause_hint: New rule from automated profiling; investigate the first failures
+      with the data owner.
+    remediation: Confirm the expected values with the data owner and correct at source.
