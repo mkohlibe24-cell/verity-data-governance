@@ -5,16 +5,16 @@
 --        3) alert on transactions of ${{min_amount}}+ within {{window_hours}} hours of waking up.
 WITH gaps AS (
     SELECT trans_num, card_token, txn_ts, amount,
-           date_diff('day', LAG(txn_ts) OVER (PARTITION BY card_token ORDER BY txn_ts), txn_ts) AS days_since_prev
+           date_diff('day', LAG(txn_ts) OVER (PARTITION BY card_token ORDER BY txn_ts, trans_num), txn_ts) AS days_since_prev
     FROM gold.fact_transactions
 ),
 wakeups AS (
     SELECT *,
            MAX(CASE WHEN days_since_prev >= {{dormant_days}} THEN txn_ts END) OVER (
-               PARTITION BY card_token ORDER BY txn_ts ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+               PARTITION BY card_token ORDER BY txn_ts, trans_num ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
            ) AS reactivated_at,
            MAX(CASE WHEN days_since_prev >= {{dormant_days}} THEN days_since_prev END) OVER (
-               PARTITION BY card_token ORDER BY txn_ts ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+               PARTITION BY card_token ORDER BY txn_ts, trans_num ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
            ) AS dormant_days
     FROM gaps
 )

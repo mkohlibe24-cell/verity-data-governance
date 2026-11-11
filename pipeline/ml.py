@@ -33,23 +33,25 @@ SELECT
     f.distance_from_home_km,
     year(f.txn_ts) - c.birth_year                     AS age,
     ln(1 + c.city_pop)                                AS log_city_pop,
-    date_diff('second', LAG(f.txn_ts) OVER (PARTITION BY f.card_token ORDER BY f.txn_ts), f.txn_ts) / 3600.0
+    date_diff('second', LAG(f.txn_ts) OVER (PARTITION BY f.card_token ORDER BY f.txn_ts, f.trans_num), f.txn_ts) / 3600.0
                                                       AS hours_since_prev,
     COUNT(*) OVER (PARTITION BY f.card_token ORDER BY f.txn_ts
                    RANGE BETWEEN INTERVAL 1 HOUR PRECEDING AND CURRENT ROW EXCLUDE CURRENT ROW)   AS txn_count_1h,
     COUNT(*) OVER (PARTITION BY f.card_token ORDER BY f.txn_ts
                    RANGE BETWEEN INTERVAL 24 HOURS PRECEDING AND CURRENT ROW EXCLUDE CURRENT ROW) AS txn_count_24h,
-    COALESCE(SUM(f.amount::DOUBLE) OVER (PARTITION BY f.card_token ORDER BY f.txn_ts
+    COALESCE(SUM(f.amount) OVER (PARTITION BY f.card_token ORDER BY f.txn_ts
                    RANGE BETWEEN INTERVAL 24 HOURS PRECEDING AND CURRENT ROW EXCLUDE CURRENT ROW), 0) AS amount_sum_24h,
-    AVG(f.amount::DOUBLE) OVER prior                  AS prior_avg_amount,
+    AVG(f.amount) OVER prior                          AS prior_avg_amount,     -- exact DECIMAL sum, then divide
     STDDEV_SAMP(f.amount::DOUBLE) OVER prior          AS prior_std_amount,
     AVG(CASE WHEN hour(f.txn_ts) >= 22 OR hour(f.txn_ts) < 4 THEN 1.0 ELSE 0.0 END) OVER prior AS prior_night_share,
     COUNT(*) OVER prior                               AS prior_txn_count,
-    COUNT(*) OVER (PARTITION BY f.card_token, f.category ORDER BY f.txn_ts
+    COUNT(*) OVER (PARTITION BY f.card_token, f.category ORDER BY f.txn_ts, f.trans_num
                    ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)                             AS prior_txn_in_category
 FROM gold.fact_transactions f
 JOIN gold.dim_customer c USING (card_token)
-WINDOW prior AS (PARTITION BY f.card_token ORDER BY f.txn_ts ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
+-- trans_num breaks ties when a card has two transactions in the same second (84 cases),
+-- so row-based windows always see the same order
+WINDOW prior AS (PARTITION BY f.card_token ORDER BY f.txn_ts, f.trans_num ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
 ORDER BY f.txn_ts, f.trans_num  -- fixed row order so training is reproducible run to run
 """
 
@@ -87,7 +89,8 @@ def build_features(con) -> pd.DataFrame:
     df["category"] = pd.Categorical(df["category"], categories=cats)
     for c in FEATURES:
         if c != "category":
-            df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64")
+            # Round away floating-point noise from parallel aggregation so runs are reproducible
+            df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64").round(6)
     return df
 
 

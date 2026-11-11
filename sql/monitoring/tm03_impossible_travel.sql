@@ -11,7 +11,7 @@ WITH ordered AS (
         LAG(merch_long) OVER p AS prev_long
     FROM gold.fact_transactions
     WHERE merch_lat IS NOT NULL AND merch_long IS NOT NULL
-    WINDOW p AS (PARTITION BY card_token ORDER BY txn_ts)
+    WINDOW p AS (PARTITION BY card_token ORDER BY txn_ts, trans_num)  -- trans_num breaks same-second ties
 ),
 legs AS (
     SELECT *,
