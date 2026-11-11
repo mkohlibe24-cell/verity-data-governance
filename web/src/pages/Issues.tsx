@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { api } from "../lib/session";
-import { fmtInt, fmtPct } from "../lib/format";
+import { fmtInt, fmtPct, pctText } from "../lib/format";
 import { DataTable } from "../components/DataTable";
 import { Badge, Card, ErrorState, Input, KeyValue, LoadingBlock, PageHeader, Select, SeverityBadge, SlideOver, Stat } from "../components/ui";
 
@@ -70,11 +70,11 @@ export default function Issues() {
         {open && (
           <div className="space-y-6 text-sm">
             <div className="flex flex-wrap gap-2"><SeverityBadge s={open.severity} /><Badge>{open.status}</Badge></div>
-            <p>{open.description}</p>
+            <p>{pctText(open.description)}</p>
             <KeyValue items={[
               ["Owner", open.owner], ["Due date", open.due_date], ["Records affected", fmtInt(open.records_affected)],
-              ["From injected defects", open.synthetic_share_pct == null ? "–" : fmtPct(open.synthetic_share_pct, 1)],
-              ["Remediation progress", fmtPct(open.remediation_progress_pct, 0)],
+              ["From injected defects", open.synthetic_share_pct == null ? "–" : fmtPct(open.synthetic_share_pct)],
+              ["Remediation progress", fmtPct(open.remediation_progress_pct)],
               ["First / last seen", `${open.first_seen_run} / ${open.last_seen_run}`],
             ]} />
             <div>

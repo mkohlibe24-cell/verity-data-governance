@@ -22,12 +22,20 @@ type Overview = {
   monitoring: { alerts: number; alerts_by_priority: Record<string, number> };
   ml: { comparison_test: Record<string, Cmp>; threshold: Record<string, number> };
   kris: Kri[]; kri_trend: Trend[]; alerts_monthly: { month: string; priority: string; n: number }[];
+  previous_run: string | null; kri_previous: { kri_id: string; value: number; rag: string }[];
 };
 
 function threshText(k: Kri) {
   const op = k.direction === "higher_is_better" ? "below" : "above";
-  const f = (v: number) => (k.unit === "%" ? `${v}%` : k.unit === "count" ? `${v}` : `${v} ${k.unit}`);
-  return `Amber ${op} ${f(k.amber_threshold)}, Red ${op} ${f(k.red_threshold)}`;
+  return `Amber ${op} ${fmtValue(k.amber_threshold, k.unit)}, Red ${op} ${fmtValue(k.red_threshold, k.unit)}`;
+}
+
+/** Run-level KRIs have no monthly history, so compare with the previous full pipeline run instead. */
+function deltaNote(k: Kri, prev?: { value: number }) {
+  if (!prev) return "First run: nothing to compare yet";
+  const diff = k.value - prev.value;
+  if (Math.abs(diff) < 1e-9) return "No change vs previous run";
+  return `${diff > 0 ? "Up" : "Down"} ${fmtValue(Math.abs(diff), k.unit)} vs previous run`;
 }
 
 function Spark({ data, color }: { data: number[]; color: string }) {
@@ -48,7 +56,12 @@ function TrendChart({ k, trend }: { k: Kri; trend: Trend[] }) {
     legend: undefined,
     grid: { left: 8, right: 96, top: 16, bottom: 8, containLabel: true },
     xAxis: { type: "category" as const, data: trend.map((p) => p.period), ...axis(t), splitLine: { show: false } },
-    yAxis: { type: "value" as const, scale: true, ...axis(t) },
+    tooltip: { ...baseOption(t).tooltip, valueFormatter: (v: unknown) => fmtValue(v as number, k.unit) },
+    yAxis: {
+      type: "value" as const, scale: true, ...axis(t),
+      // Ticks at least 0.01 apart so two-decimal percentage labels never repeat.
+      ...(k.unit === "%" ? { minInterval: 0.01, axisLabel: { color: t.muted, formatter: (v: number) => fmtPct(v) } } : {}),
+    },
     series: [{
       type: "line" as const, name: k.name, data: trend.map((p) => p.value), symbol: "circle", symbolSize: 5,
       lineStyle: { color: t.series[0], width: 2 }, itemStyle: { color: t.series[0] },
@@ -56,8 +69,8 @@ function TrendChart({ k, trend }: { k: Kri; trend: Trend[] }) {
         symbol: "none", silent: true,
         label: { position: "end" as const, color: t.muted, fontSize: 11 },
         data: [
-          { yAxis: k.amber_threshold, name: "Amber", lineStyle: { color: t.amber, type: "dashed" as const }, label: { formatter: `Amber ${k.amber_threshold}` } },
-          { yAxis: k.red_threshold, name: "Red", lineStyle: { color: t.red, type: "dashed" as const }, label: { formatter: `Red ${k.red_threshold}` } },
+          { yAxis: k.amber_threshold, name: "Amber", lineStyle: { color: t.amber, type: "dashed" as const }, label: { formatter: `Amber ${fmtValue(k.amber_threshold, k.unit)}` } },
+          { yAxis: k.red_threshold, name: "Red", lineStyle: { color: t.red, type: "dashed" as const }, label: { formatter: `Red ${fmtValue(k.red_threshold, k.unit)}` } },
         ],
       },
     }],
@@ -123,17 +136,26 @@ export default function Overview() {
             <button
               key={k.kri_id}
               onClick={() => setOpen(k)}
-              className="rounded-lg border border-border bg-surface p-4 text-left transition-colors duration-150 hover:border-border-strong"
+              className="flex flex-col rounded-lg border border-border bg-surface p-4 text-left transition-colors duration-150 hover:border-border-strong"
               aria-label={`${k.kri_id} ${k.name}: ${fmtValue(k.value, k.unit)}, ${k.rag}. Open details`}
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex w-full items-start justify-between gap-2">
                 <span className="text-xs font-medium text-muted">{k.kri_id} · {k.category}</span>
                 <RagBadge rag={k.rag} />
               </div>
               <div className="mt-1 text-sm font-medium text-text">{k.name}</div>
               <div className="num mt-2 text-2xl font-semibold text-text">{fmtValue(k.value, k.unit)}</div>
               <div className="mt-1 text-xs text-muted">{threshText(k)}</div>
-              <div className="mt-2 h-6">{tr.length > 1 && <Spark data={tr.map((p) => p.value)} color={t.series[1]} />}</div>
+              <div className="mt-auto w-full pt-3">
+                <div className="flex h-6 items-center border-t border-border pt-2">
+                  {tr.length > 1
+                    ? <Spark data={tr.map((p) => p.value)} color={t.series[1]} />
+                    : <span className="text-xs font-medium text-text">{deltaNote(k, d.kri_previous.find((p) => p.kri_id === k.kri_id))}</span>}
+                </div>
+                <div className="num mt-2 text-xs text-muted">
+                  {tr.length > 1 ? `Monthly, ${tr[0].period} to ${tr[tr.length - 1].period}` : "Measured per pipeline run"}
+                </div>
+              </div>
             </button>
           );
         })}
@@ -182,8 +204,8 @@ export default function Overview() {
                 <tr key={name} className="border-t border-border">
                   <td className="px-4 py-2 font-medium">{name}</td>
                   <td className="num px-4 py-2">{fmtInt(c.alerts)}</td>
-                  <td className="num px-4 py-2">{fmtPct(c.precision * 100, 1)}</td>
-                  <td className="num px-4 py-2">{fmtPct(c.recall * 100, 1)}</td>
+                  <td className="num px-4 py-2">{fmtPct(c.precision * 100)}</td>
+                  <td className="num px-4 py-2">{fmtPct(c.recall * 100)}</td>
                   <td className="num px-4 py-2">{c.pr_auc != null ? fmtNum(c.pr_auc, 3) : "–"}</td>
                   <td className="num px-4 py-2">{fmtUsd(c.fraud_amount_missed)}</td>
                 </tr>

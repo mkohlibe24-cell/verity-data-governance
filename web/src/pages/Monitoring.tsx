@@ -5,7 +5,7 @@ import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tan
 import clsx from "clsx";
 import { ChevronLeft, ChevronRight, Search, ShieldAlert } from "lucide-react";
 import { api, hasRole, useSession } from "../lib/session";
-import { fmtInt, fmtNum, fmtPct, fmtTs, fmtUsd } from "../lib/format";
+import { fmtInt, fmtNum, fmtPct, fmtTs, fmtUsd, pctText } from "../lib/format";
 import { axis, baseOption, Chart, useChartTheme } from "../components/Chart";
 import { DataTable } from "../components/DataTable";
 import {
@@ -271,7 +271,7 @@ function AlertDetail({ id, onClose }: { id: string | null; onClose: () => void }
                 {d.rule_hits.map((h) => (
                   <div key={h.rule_id}>
                     <div className="flex items-center gap-2"><Badge tone="accent">{h.rule_id}</Badge><span className="font-medium">{h.name}</span></div>
-                    <div className="mt-1 text-xs text-muted">{h.reason}</div>
+                    <div className="mt-1 text-xs text-muted">{pctText(h.reason)}</div>
                   </div>
                 ))}
                 {d.alert.ml_score != null && (
@@ -342,8 +342,8 @@ function RulesTab() {
     { accessorKey: "rule_id", header: "Rule", cell: (c) => <span className="font-medium">{c.getValue()}</span> },
     { accessorKey: "name", header: "Name", cell: (c) => <div className="max-w-[260px]"><div className="font-medium">{c.getValue()}</div><div className="text-xs text-muted">{c.row.original.risk_addressed}</div></div> },
     { accessorKey: "hits_test", header: "Hits (test)", cell: (c) => <span className="num">{fmtInt(c.getValue())}</span> },
-    { accessorKey: "precision_test_pct", header: "Precision", cell: (c) => <span className="num">{fmtPct(c.getValue(), 1)}</span> },
-    { accessorKey: "recall_test_pct", header: "Recall", cell: (c) => <span className="num">{fmtPct(c.getValue(), 1)}</span> },
+    { accessorKey: "precision_test_pct", header: "Precision", cell: (c) => <span className="num">{fmtPct(c.getValue())}</span> },
+    { accessorKey: "recall_test_pct", header: "Recall", cell: (c) => <span className="num">{fmtPct(c.getValue())}</span> },
     { accessorKey: "unique_fraud_catches_test", header: "Unique catches", cell: (c) => <span className="num">{fmtInt(c.getValue())}</span> },
     { accessorKey: "threshold_rationale", header: "Threshold rationale", cell: (c) => <span className="block max-w-[320px] text-xs text-muted">{c.getValue()}</span> },
   ];

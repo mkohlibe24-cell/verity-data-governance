@@ -5,7 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Check, Search, X } from "lucide-react";
 import { api, hasRole, useSession } from "../lib/session";
-import { fmtInt, fmtNum, fmtPct, fmtTs, fmtUsd } from "../lib/format";
+import { fmtInt, fmtNum, fmtPct, fmtTs, fmtUsd, pctText } from "../lib/format";
 import { axis, baseOption, Chart, useChartTheme } from "../components/Chart";
 import { DataTable } from "../components/DataTable";
 import {
@@ -56,13 +56,13 @@ function ScorecardTab() {
   const option = {
     ...baseOption(t),
     legend: undefined,
-    tooltip: { ...baseOption(t).tooltip, valueFormatter: (v: unknown) => `${fmtNum(v as number, 4)}%` },
+    tooltip: { ...baseOption(t).tooltip, valueFormatter: (v: unknown) => fmtPct(v as number) },
     grid: { left: 8, right: 64, top: 8, bottom: 8, containLabel: true },
-    xAxis: { type: "value" as const, min: Math.floor(Math.min(...dims.map((x) => x.pass_rate_pct)) / 5) * 5, max: 100, ...axis(t), axisLabel: { color: t.muted, formatter: "{value}%" } },
+    xAxis: { type: "value" as const, min: Math.floor(Math.min(...dims.map((x) => x.pass_rate_pct)) / 5) * 5, max: 100, ...axis(t), axisLabel: { color: t.muted, formatter: (v: number) => fmtPct(v) } },
     yAxis: { type: "category" as const, data: dims.map((x) => x.dimension), ...axis(t), splitLine: { show: false } },
     series: [{
       type: "bar" as const, data: dims.map((x) => x.pass_rate_pct), barWidth: 14, itemStyle: { color: t.series[0], borderRadius: 2 },
-      label: { show: true, position: "right" as const, color: t.text, formatter: (p: { value: unknown }) => `${fmtNum(p.value as number, 3)}%` },
+      label: { show: true, position: "right" as const, color: t.text, formatter: (p: { value: unknown }) => fmtPct(p.value as number) },
     }],
   };
   const columns: ColumnDef<RuleRow, any>[] = [
@@ -73,8 +73,8 @@ function ScorecardTab() {
     { accessorKey: "severity", header: "Severity", cell: (c) => <SeverityBadge s={c.getValue()} /> },
     { accessorKey: "action", header: "Action", cell: (c) => <Badge tone={c.getValue() === "quarantine" ? "accent" : "neutral"}>{c.getValue()}</Badge> },
     { accessorKey: "records_failed", header: "Failed", cell: (c) => <span className="num">{fmtInt(c.getValue())}</span> },
-    { accessorKey: "failure_pct", header: "Fail %", cell: (c) => <span className="num">{fmtPct(c.getValue(), 4)}</span> },
-    { accessorKey: "threshold_pct", header: "Tolerance", cell: (c) => <span className="num">{fmtPct(c.getValue(), 2)}</span> },
+    { accessorKey: "failure_pct", header: "Fail %", cell: (c) => <span className="num">{fmtPct(c.getValue())}</span> },
+    { accessorKey: "threshold_pct", header: "Tolerance", cell: (c) => <span className="num">{fmtPct(c.getValue())}</span> },
     { accessorKey: "status", header: "Status", cell: (c) => <RagBadge rag={c.getValue()} /> },
   ];
   return (
@@ -88,7 +88,7 @@ function ScorecardTab() {
             {d.findings.slice(0, 5).map((f) => (
               <li key={f.finding} className="px-4 py-2.5">
                 <div className="text-sm font-medium text-text">{f.finding}</div>
-                <div className="text-xs text-muted">{f.detail}</div>
+                <div className="text-xs text-muted">{pctText(f.detail)}</div>
               </li>
             ))}
           </ul>
@@ -183,7 +183,7 @@ function CdeTab() {
     { accessorKey: "table_name", header: "Table" },
     { accessorKey: "rules", header: "Rules", cell: (c) => <span className="num">{c.getValue()}</span> },
     { accessorKey: "records_failed", header: "Failed records", cell: (c) => <span className="num">{fmtInt(c.getValue())}</span> },
-    { accessorKey: "pass_rate_pct", header: "Pass rate", cell: (c) => <span className="num">{fmtPct(c.getValue(), 4)}</span> },
+    { accessorKey: "pass_rate_pct", header: "Pass rate", cell: (c) => <span className="num">{fmtPct(c.getValue())}</span> },
     { id: "rag", header: "Status", cell: (c) => <RagBadge rag={c.row.original.pass_rate_pct >= 99.9 ? "Green" : c.row.original.pass_rate_pct >= 99 ? "Amber" : "Red"} /> },
   ];
   const regCols: ColumnDef<CatalogRow, any>[] = [
@@ -373,9 +373,9 @@ function SuggestionsTab() {
         {Object.keys(c.row.original.params ?? {}).length > 0 && <span className="ml-1 block max-w-[220px] truncate text-xs text-muted">{JSON.stringify(c.row.original.params)}</span>}
       </span>) },
     { accessorKey: "dimension", header: "Dimension" },
-    { accessorKey: "evidence", header: "Evidence from profiling", cell: (c) => <span className="block max-w-[300px] text-xs">{c.getValue()}</span> },
+    { accessorKey: "evidence", header: "Evidence from profiling", cell: (c) => <span className="block max-w-[300px] text-xs">{pctText(c.getValue())}</span> },
     { accessorKey: "would_fail_records", header: "Impact preview", cell: (c) => (
-      <span className="num whitespace-nowrap">{fmtInt(c.getValue())} <span className="text-xs text-muted">({fmtPct(c.row.original.would_fail_pct, 4)})</span></span>) },
+      <span className="num whitespace-nowrap">{fmtInt(c.getValue())} <span className="text-xs text-muted">({fmtPct(c.row.original.would_fail_pct)})</span></span>) },
     { accessorKey: "status", header: "Status", cell: (c) => {
       const s = c.row.original;
       return (
@@ -455,11 +455,11 @@ export default function Governance() {
     <>
       <PageHeader title="Data Governance" subtitle="Data quality, metadata, lineage and controls for the card transactions data product, from the latest governed pipeline run." />
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-5">
-        <Stat label="CDE pass rate" value={o ? fmtPct(o.dq.cde_pass_rate_pct, 4) : "–"} sub="Critical Data Elements" />
-        <Stat label="DQ rules passing" value={o ? `${o.dq.rules_passed} / ${o.dq.rules_total}` : "–"} sub={o ? `${fmtPct(o.dq.injected_defect_detection_pct, 0)} of injected defects caught` : undefined} />
-        <Stat label="Quarantined records" value={o ? fmtInt(o.data.quarantined_rows) : "–"} sub={o ? `${fmtPct(o.data.quarantine_pct, 4)} of bronze` : undefined} />
+        <Stat label="CDE pass rate" value={o ? fmtPct(o.dq.cde_pass_rate_pct) : "–"} sub="Critical Data Elements" />
+        <Stat label="DQ rules passing" value={o ? `${o.dq.rules_passed} / ${o.dq.rules_total}` : "–"} sub={o ? `${fmtPct(o.dq.injected_defect_detection_pct)} of injected defects caught` : undefined} />
+        <Stat label="Quarantined records" value={o ? fmtInt(o.data.quarantined_rows) : "–"} sub={o ? `${fmtPct(o.data.quarantine_pct)} of bronze` : undefined} />
         <Stat label="Reconciliation" value={o ? `${o.reconciliation.controls - o.reconciliation.breaks} / ${o.reconciliation.controls}` : "–"} sub="controls passed" />
-        <Stat label="Catalog" value={o ? `${o.catalog.columns} columns` : "–"} sub={o ? `${fmtPct(o.catalog.curated_pct, 1)} curated, ${o.catalog.cdes} CDEs` : undefined} />
+        <Stat label="Catalog" value={o ? `${o.catalog.columns} columns` : "–"} sub={o ? `${fmtPct(o.catalog.curated_pct)} curated, ${o.catalog.cdes} CDEs` : undefined} />
       </div>
       <Tabs value={tab} onChange={(v) => setParams({ tab: v }, { replace: true })} tabs={[
         { id: "scorecard", label: "DQ scorecard", content: <ScorecardTab /> },

@@ -133,6 +133,13 @@ def overview(user: User = Depends(current_user)) -> dict:
                          " FROM governance.kri_results WHERE run_id = ? ORDER BY kri_id", [run])
         trend = rows(con, "SELECT kri_id, period, value, rag FROM governance.kri_trend WHERE run_id = ?"
                           " ORDER BY kri_id, period", [run])
+        # Run-level KRIs (issues, breaks, contracts) have no monthly history: compare with the previous full run.
+        prev = con.execute("SELECT run_id FROM governance.pipeline_runs WHERE status = 'SUCCESS' AND mode = 'full'"
+                           " AND started_at < (SELECT started_at FROM governance.pipeline_runs WHERE run_id = ?)"
+                           " ORDER BY started_at DESC LIMIT 1", [run]).fetchall()
+        prev_run = prev[0][0] if prev else None
+        kri_prev = rows(con, "SELECT kri_id, value, rag FROM governance.kri_results WHERE run_id = ?",
+                        [prev_run]) if prev_run else []
         alerts_monthly = rows(con, "SELECT txn_month AS month, priority, count(*) AS n FROM monitoring.alerts"
                                    " GROUP BY ALL ORDER BY 1, 2")
         dq_monthly = rows(con, "SELECT month, sum(checks) AS checks, sum(failed) AS failed,"
@@ -149,6 +156,7 @@ def overview(user: User = Depends(current_user)) -> dict:
         "ml": {"comparison_test": (res.get("ml") or {}).get("comparison_test"),
                "threshold": (res.get("ml") or {}).get("threshold")},
         "kris": kris, "kri_trend": trend, "alerts_monthly": alerts_monthly, "dq_monthly": dq_monthly,
+        "previous_run": prev_run, "kri_previous": kri_prev,
     }
 
 
