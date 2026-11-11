@@ -1,0 +1,16 @@
+contract: gold.dim_merchant
+version: 1.0.0
+description: One row per standardised merchant name with its primary category.
+owner: Data Product Owner
+steward: Merchant Data Steward
+consumers: [Fraud monitoring, Merchant analytics]
+classification: Internal
+min_rows: 10
+schema:
+  - {name: merchant_key, type: VARCHAR, required: true, unique: true}
+  - {name: merchant_name, type: VARCHAR, required: true}
+  - {name: primary_category, type: VARCHAR, required: true}
+  - {name: category_count, type: BIGINT, required: true}
+forbidden_columns: []
+quality:
+  - {metric: gold_rules_pass, table: dim_merchant}

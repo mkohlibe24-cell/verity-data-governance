@@ -1,0 +1,20 @@
+contract: gold.dim_customer
+version: 1.0.0
+description: One row per card with masked and generalised customer attributes.
+owner: Data Product Owner
+steward: Customer Data Steward
+consumers: [Fraud monitoring, Customer analytics, Power BI dashboards]
+classification: Confidential (pseudonymised)
+freshness: {column: last_txn_ts, max_lag_hours: 168}
+min_rows: 10
+schema:
+  - {name: card_token, type: VARCHAR, required: true, unique: true}
+  - {name: card_number_masked, type: VARCHAR, required: true}
+  - {name: card_last4, type: VARCHAR, required: true}
+  - {name: birth_year, type: BIGINT}
+  - {name: age_band, type: VARCHAR}
+  - {name: state, type: VARCHAR}
+  - {name: zip3, type: VARCHAR}
+forbidden_columns: [card_number, cc_num, first_name, last_name, street, dob, zip]
+quality:
+  - {metric: gold_rules_pass, table: dim_customer}

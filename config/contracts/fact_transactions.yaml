@@ -1,0 +1,26 @@
+# Data contract: the agreement between the producer of a data product and its consumers.
+contract: gold.fact_transactions
+version: 1.0.0
+description: Validated, PII-protected card transactions at transaction grain.
+owner: Data Product Owner
+steward: Transaction Data Steward
+consumers: [Fraud monitoring, Regulatory reporting, Finance analytics, Power BI dashboards]
+classification: Confidential (pseudonymised)
+freshness: {column: txn_ts, max_lag_hours: 24}
+min_rows: 1000
+schema:
+  - {name: trans_num, type: VARCHAR, required: true, unique: true}
+  - {name: txn_ts, type: TIMESTAMP, required: true}
+  - {name: txn_date, type: DATE, required: true}
+  - {name: txn_month, type: VARCHAR, required: true}
+  - {name: card_token, type: VARCHAR, required: true}
+  - {name: merchant_key, type: VARCHAR, required: true}
+  - {name: category, type: VARCHAR, required: true}
+  - {name: amount, type: DECIMAL, required: true}
+  - {name: distance_from_home_km, type: DOUBLE}
+  - {name: is_fraud, type: INTEGER}
+  - {name: is_synthetic, type: BOOLEAN, required: true}
+forbidden_columns: [card_number, cc_num, first_name, last_name, street, dob]
+quality:
+  - {metric: gold_rules_pass, table: fact_transactions}
+  - {metric: cde_pass_rate_pct, min: 99.0}

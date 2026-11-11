@@ -1,0 +1,144 @@
+# Curated business metadata for the data catalog.
+# Technical metadata (column names, types) is generated automatically from the warehouse;
+# this file adds what a machine cannot know: business definition, owner, sensitivity,
+# and why a column is a Critical Data Element (CDE).
+#
+# Sensitivity classes:
+#   Restricted   - PCI or direct personal identifiers (card number, name, street)
+#   Confidential - quasi-identifiers or pseudonymised data (DOB, ZIP, location, card token)
+#   Internal     - business data with no personal content
+# Keys: "<schema>.<table>.<column>", or "*.<column>" for a definition shared by all tables.
+
+tables:
+  bronze.transactions_raw:
+    owner: Card Transactions Data Owner
+    steward: Transaction Data Steward
+    source: Kaggle fraudTrain.csv / fraudTest.csv (Sparkov simulation, CC0) + generate_data.py
+  silver.transactions:
+    owner: Card Transactions Data Owner
+    steward: Transaction Data Steward
+    source: bronze.transactions_raw (records passing quarantine rules)
+  silver.dq_quarantine:
+    owner: Card Transactions Data Owner
+    steward: Transaction Data Steward
+    source: bronze.transactions_raw (records failing quarantine rules)
+  gold.fact_transactions:
+    owner: Data Product Owner
+    steward: Transaction Data Steward
+    source: silver.transactions
+  gold.dim_customer:
+    owner: Data Product Owner
+    steward: Customer Data Steward
+    source: silver.transactions
+  gold.dim_merchant:
+    owner: Data Product Owner
+    steward: Merchant Data Steward
+    source: silver.transactions
+  monitoring.alerts:
+    owner: Fraud Monitoring Control Owner
+    steward: Transaction Data Steward
+    source: monitoring.rule_hits + monitoring.ml_scores
+
+columns:
+  # ---- shared definitions
+  "*.bronze_row_id": {description: "Surrogate key assigned at ingestion; traces any record back to its bronze row and source file.", source: ingest.py}
+  "*.trans_num": {description: "Unique transaction identifier issued by the source system.", cde: true, cde_reason: "Primary key for every transaction; needed to reconcile, deduplicate and investigate alerts.", sensitivity: Internal}
+  "*.category": {description: "Merchant category of the transaction (14 agreed codes).", cde: true, cde_reason: "Drives category-level monitoring rules and spend reporting."}
+  "*.amount": {description: "Transaction amount in USD.", cde: true, cde_reason: "Basis of loss reporting, reconciliation totals and amount-based monitoring rules."}
+  "*.is_fraud": {description: "Confirmed fraud outcome (1 = fraud, 0 = genuine); label for model training and alert evaluation.", cde: true, cde_reason: "Determines model training labels and the fraud KRIs."}
+  "*.is_synthetic": {description: "TRUE if the record was created by generate_data.py (injected scenario or DQ defect), FALSE if from the source files."}
+  "*.synthetic_tag": {description: "Which generator scenario or defect created the record, e.g. scenario:card_testing or dq:negative_amount."}
+  "*.txn_ts": {description: "Date and time of the transaction (authoritative timestamp).", cde: true, cde_reason: "Needed for timeliness controls, monitoring windows and period reporting."}
+  "*.card_token": {description: "SHA-256 hash of salt + card number; joins transactions to customers without exposing the card number.", sensitivity: Confidential, pii: "Pseudonymised card identifier", cde: true, cde_reason: "Customer key for monitoring baselines and joins."}
+  "*.merchant_key": {description: "First 12 characters of the MD5 hash of the standardised merchant name.", sensitivity: Internal}
+  "*.merch_lat": {description: "Merchant latitude (decimal degrees).", sensitivity: Internal}
+  "*.merch_long": {description: "Merchant longitude (decimal degrees).", sensitivity: Internal}
+  "*._source": {description: "Source file or generator component that produced the record."}
+
+  # ---- bronze (raw text, as landed)
+  bronze.transactions_raw._source_row_num: {description: "Row number of the record within its source file."}
+  bronze.transactions_raw.trans_date_trans_time: {description: "Raw transaction timestamp text as received.", cde: true, cde_reason: "Source of txn_ts."}
+  bronze.transactions_raw.cc_num: {description: "Raw card number (PAN) as received.", sensitivity: Restricted, pii: "PCI - primary account number", cde: true, cde_reason: "Identifies the card; hashed before gold."}
+  bronze.transactions_raw.merchant: {description: "Raw merchant name (simulator adds a 'fraud_' prefix to every name)."}
+  bronze.transactions_raw.amt: {description: "Raw amount text as received.", cde: true, cde_reason: "Source of amount."}
+  bronze.transactions_raw.first: {description: "Cardholder first name.", sensitivity: Restricted, pii: "Direct identifier - name"}
+  bronze.transactions_raw.last: {description: "Cardholder last name.", sensitivity: Restricted, pii: "Direct identifier - name"}
+  bronze.transactions_raw.gender: {description: "Cardholder gender code (F/M).", sensitivity: Confidential}
+  bronze.transactions_raw.street: {description: "Cardholder street address.", sensitivity: Restricted, pii: "Direct identifier - address"}
+  bronze.transactions_raw.city: {description: "Cardholder city.", sensitivity: Confidential}
+  bronze.transactions_raw.state: {description: "Cardholder US state code.", sensitivity: Confidential}
+  bronze.transactions_raw.zip: {description: "Cardholder ZIP code (leading zeros lost upstream).", sensitivity: Confidential}
+  bronze.transactions_raw.lat: {description: "Cardholder home latitude.", sensitivity: Confidential}
+  bronze.transactions_raw.long: {description: "Cardholder home longitude.", sensitivity: Confidential}
+  bronze.transactions_raw.city_pop: {description: "Population of the cardholder's city."}
+  bronze.transactions_raw.job: {description: "Cardholder occupation.", sensitivity: Confidential}
+  bronze.transactions_raw.dob: {description: "Cardholder date of birth.", sensitivity: Confidential, pii: "Quasi-identifier - date of birth"}
+  bronze.transactions_raw.unix_time: {description: "Epoch seconds from the source system. Unreliable (offset by about 7 years, issue DQ-K01); not used downstream."}
+  bronze.transactions_raw.is_fraud: {description: "Raw fraud label text.", cde: true, cde_reason: "Source of is_fraud."}
+  bronze.transactions_raw._run_id: {description: "Pipeline run that loaded the record."}
+  bronze.transactions_raw._ingested_at: {description: "Timestamp when the record was loaded."}
+
+  # ---- silver (typed, validated, standardised)
+  silver.transactions.card_number: {description: "Card number (PAN), validated (Luhn, length).", sensitivity: Restricted, pii: "PCI - primary account number", cde: true, cde_reason: "Identifies the card; restricted access, hashed before gold."}
+  silver.transactions.merchant_name: {description: "Merchant name with the simulator's 'fraud_' prefix removed.", cde: true, cde_reason: "Needed to identify the counterparty in investigations."}
+  silver.transactions.first_name: {description: "Cardholder first name.", sensitivity: Restricted, pii: "Direct identifier - name"}
+  silver.transactions.last_name: {description: "Cardholder last name.", sensitivity: Restricted, pii: "Direct identifier - name"}
+  silver.transactions.gender: {description: "Cardholder gender code (F/M).", sensitivity: Confidential}
+  silver.transactions.street: {description: "Cardholder street address.", sensitivity: Restricted, pii: "Direct identifier - address"}
+  silver.transactions.city: {description: "Cardholder city.", sensitivity: Confidential}
+  silver.transactions.state: {description: "Cardholder US state code.", sensitivity: Confidential}
+  silver.transactions.zip: {description: "Cardholder ZIP code, left-padded to 5 digits in silver.", sensitivity: Confidential}
+  silver.transactions.home_lat: {description: "Cardholder home latitude (full precision).", sensitivity: Confidential}
+  silver.transactions.home_long: {description: "Cardholder home longitude (full precision).", sensitivity: Confidential}
+  silver.transactions.city_pop: {description: "Population of the cardholder's city."}
+  silver.transactions.job: {description: "Cardholder occupation.", sensitivity: Confidential}
+  silver.transactions.dob: {description: "Cardholder date of birth.", sensitivity: Confidential, pii: "Quasi-identifier - date of birth"}
+  silver.transactions.dq_flags: {description: "IDs of non-blocking (flag) DQ rules the record failed."}
+
+  # ---- quarantine
+  silver.dq_quarantine.failed_rules: {description: "IDs of all quarantine rules the record failed."}
+  silver.dq_quarantine.reason_codes: {description: "Reason codes for the quarantine, e.g. NULL_AMOUNT, DUPLICATE_TRANS_ID."}
+  silver.dq_quarantine.primary_reason: {description: "First reason code (alphabetical), for summaries."}
+  silver.dq_quarantine.run_id: {description: "Pipeline run that quarantined the record."}
+  silver.dq_quarantine.quarantined_at: {description: "When the record was quarantined."}
+  silver.dq_quarantine.raw_record: {description: "Full raw bronze record as JSON, kept as evidence for investigation and re-processing.", sensitivity: Restricted, pii: "Contains raw PII"}
+
+  # ---- gold
+  gold.fact_transactions.txn_date: {description: "Calendar date of the transaction."}
+  gold.fact_transactions.txn_month: {description: "Year-month of the transaction (YYYY-MM), used for monthly reporting."}
+  gold.fact_transactions.distance_from_home_km: {description: "Distance between merchant and cardholder home, computed from full-precision coordinates before masking."}
+  gold.fact_transactions.source_system: {description: "Source file or generator component that produced the record."}
+  gold.fact_transactions.dq_flag_count: {description: "Number of non-blocking DQ rules the record failed."}
+  gold.dim_customer.card_number_masked: {description: "Card number masked except the last 4 digits.", sensitivity: Confidential, pii: "Masked PAN"}
+  gold.dim_customer.card_last4: {description: "Last 4 digits of the card number (for customer service matching).", sensitivity: Confidential}
+  gold.dim_customer.first_name_masked: {description: "First letter of the first name, rest masked.", sensitivity: Confidential}
+  gold.dim_customer.last_name_masked: {description: "First letter of the last name, rest masked.", sensitivity: Confidential}
+  gold.dim_customer.gender: {description: "Cardholder gender code.", sensitivity: Confidential}
+  gold.dim_customer.birth_year: {description: "Year of birth (date of birth generalised).", sensitivity: Confidential}
+  gold.dim_customer.age_band: {description: "Age band at the batch as-of date.", sensitivity: Internal}
+  gold.dim_customer.city: {description: "Cardholder city.", sensitivity: Confidential}
+  gold.dim_customer.state: {description: "Cardholder state code.", sensitivity: Internal}
+  gold.dim_customer.zip3: {description: "First 3 digits of the ZIP code (generalised location).", sensitivity: Internal}
+  gold.dim_customer.home_lat_2dp: {description: "Home latitude rounded to 2 decimals (about 1 km).", sensitivity: Confidential}
+  gold.dim_customer.home_long_2dp: {description: "Home longitude rounded to 2 decimals (about 1 km).", sensitivity: Confidential}
+  gold.dim_customer.city_pop: {description: "Population of the cardholder's city."}
+  gold.dim_customer.first_txn_ts: {description: "First transaction timestamp for the card."}
+  gold.dim_customer.last_txn_ts: {description: "Latest transaction timestamp for the card."}
+  gold.dim_customer.txn_count: {description: "Number of transactions for the card in gold."}
+  gold.dim_customer.has_synthetic_rows: {description: "TRUE if any of the card's transactions were generator-created."}
+  gold.dim_merchant.merchant_name: {description: "Standardised merchant name."}
+  gold.dim_merchant.primary_category: {description: "Most frequent category for the merchant name."}
+  gold.dim_merchant.category_count: {description: "Number of categories seen for the merchant name (should be 1, see DQ-K04)."}
+  gold.dim_merchant.txn_count: {description: "Number of transactions for the merchant."}
+
+  # ---- monitoring
+  monitoring.alerts.alert_id: {description: "Alert identifier (one alert per flagged transaction)."}
+  monitoring.alerts.rules_fired: {description: "Monitoring rules that flagged the transaction."}
+  monitoring.alerts.rule_reasons: {description: "Plain-English reason from each rule, with the values that triggered it."}
+  monitoring.alerts.rule_score: {description: "Rule-based risk score 0-100 (highest rule score + 10 per extra rule)."}
+  monitoring.alerts.ml_score: {description: "LightGBM fraud probability 0-1 (test period only)."}
+  monitoring.alerts.ml_flag: {description: "TRUE if the ML score is at or above the cost-optimal threshold."}
+  monitoring.alerts.ml_reasons: {description: "Top features pushing the ML score up (TreeSHAP contributions)."}
+  monitoring.alerts.detection_source: {description: "Rules only, ML only, or Rules + ML."}
+  monitoring.alerts.combined_score: {description: "Combined risk score used for prioritisation."}
+  monitoring.alerts.priority: {description: "Priority tier P1 (highest) to P4 from the combined score."}

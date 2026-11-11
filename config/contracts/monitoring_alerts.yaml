@@ -1,0 +1,20 @@
+contract: monitoring.alerts
+version: 1.0.0
+description: One alert per flagged transaction, with rules fired, ML score, reasons and priority.
+owner: Fraud Monitoring Control Owner
+steward: Transaction Data Steward
+consumers: [Fraud operations analysts, Case management app, KRI reporting]
+classification: Confidential (pseudonymised)
+freshness: {column: txn_ts, max_lag_hours: 24}
+min_rows: 100
+schema:
+  - {name: alert_id, type: VARCHAR, required: true, unique: true}
+  - {name: trans_num, type: VARCHAR, required: true, unique: true}
+  - {name: card_token, type: VARCHAR, required: true}
+  - {name: txn_ts, type: TIMESTAMP, required: true}
+  - {name: amount, type: DECIMAL, required: true}
+  - {name: rules_fired, type: "VARCHAR[]", required: true}
+  - {name: combined_score, type: DOUBLE, required: true}
+  - {name: priority, type: VARCHAR, required: true}
+  - {name: detection_source, type: VARCHAR, required: true}
+forbidden_columns: [card_number, cc_num, first_name, last_name, street, dob]

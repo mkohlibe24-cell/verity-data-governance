@@ -1,0 +1,43 @@
+# Root-cause analyses (5 Whys) for issues found in the ORIGINAL source data during discovery.
+# These are copied into the issue log when the related DQ rule fails.
+root_causes:
+  DQ-V06:
+    root_cause: ZIP code is typed as a number in the source extract, so leading zeros are stripped.
+    five_whys:
+      - "Why do ZIPs fail the 5-digit format rule? Many have 4 digits (e.g. 1257 instead of 01257)."
+      - "Why 4 digits? The leading zero is missing for New England ZIPs that start with 0."
+      - "Why is it missing? The extract writes ZIP as an integer, and integers drop leading zeros."
+      - "Why an integer? The source schema defines ZIP as numeric, not as a text code."
+      - "Why was that allowed? There is no data standard saying identifiers/codes must be stored as text."
+  DQ-K01:
+    root_cause: unix_time is populated from a different epoch than the transaction timestamp (offset of about 7 years).
+    five_whys:
+      - "Why do timestamps disagree? unix_time is about 2,556 days behind trans_date_trans_time on every record."
+      - "Why every record? The offset is systematic, not random, so it comes from how the field is generated."
+      - "Why generated differently? The simulator derives unix_time from a different base date than the timestamp."
+      - "Why was it not caught? No consistency check existed between the two time fields."
+      - "Why no check? The field had no documented owner or definition in a data dictionary."
+  DQ-V11:
+    root_cause: Card numbers are stored as integers upstream, so a leading zero is lost for some cards.
+    five_whys:
+      - "Why do some cards have 11 digits? Valid card numbers have 12-19 digits."
+      - "Why 11? Their first digit was 0 and it was dropped."
+      - "Why dropped? The source stores the card number as a number instead of text."
+      - "Why does it still pass Luhn? Removing a leading zero does not change the Luhn checksum."
+      - "Why was it allowed? No length check on card numbers at capture."
+  DQ-A01:
+    root_cause: The feed mixes supplementary (minor) cardholders with primary cardholders and carries no relationship type.
+    five_whys:
+      - "Why are there cardholders under 18? Their date of birth puts them at 14-17 years old."
+      - "Why would minors hold cards? Issuers offer supplementary cards to teenagers on a parent's account."
+      - "Why does that look like an error? The feed has no field saying whether a card is primary or supplementary."
+      - "Why no field? The extract was designed for transactions, not customer relationships."
+      - "Why does it matter? Age-based analytics and KYC checks treat every card as a primary account."
+  DQ-K04:
+    root_cause: Merchant names are used as keys but are not unique; the feed has no merchant ID.
+    five_whys:
+      - "Why does a merchant have two categories? Two different merchants share the same name."
+      - "Why are they merged? The pipeline can only identify merchants by name."
+      - "Why only by name? The source does not include the acquirer's merchant ID."
+      - "Why not? The extract was built before merchant-level analytics were needed."
+      - "Why does it matter? Category-based rules (TM-08) and merchant reporting use the wrong category for some rows."
