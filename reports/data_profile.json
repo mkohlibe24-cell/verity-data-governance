@@ -1,0 +1,943 @@
+{
+  "run_id": "RUN-20261111-164200",
+  "summary": {
+    "rows": 1855568,
+    "source_rows": 1852394,
+    "synthetic_rows": 3174,
+    "min_ts": "1970-01-01 00:00:00",
+    "max_ts": "2021-06-27 02:20:41"
+  },
+  "findings": [
+    {
+      "finding": "ZIP codes missing leading zero",
+      "value": 116389,
+      "detail": "116,389 of 1,852,394 source rows (6.3%) have ZIPs shorter than 5 digits: stored as numbers upstream."
+    },
+    {
+      "finding": "unix_time offset from timestamp",
+      "value": 2557.0,
+      "detail": "unix_time is consistently about 2,557 days (about 7.0 years) behind trans_date_trans_time."
+    },
+    {
+      "finding": "Merchant names prefixed 'fraud_'",
+      "value": 100.0,
+      "detail": "100.0% of merchant names start with 'fraud_' (a simulator artefact, not a fraud label). Stripped in silver."
+    },
+    {
+      "finding": "Card numbers shorter than 12 digits",
+      "value": 7,
+      "detail": "7 cards (8,819 rows) have 11-digit card numbers, likely a leading zero lost upstream."
+    },
+    {
+      "finding": "Cardholders under 18 at transaction",
+      "value": 7,
+      "detail": "7 cards (19,722 rows) belong to cardholders under 18: supplementary cards or DOB errors."
+    },
+    {
+      "finding": "Merchants mapped to more than one category",
+      "value": 7,
+      "detail": "7 merchant names appear under two categories: names are not unique keys."
+    },
+    {
+      "finding": "Longest gap between a card's transactions (days)",
+      "value": 16,
+      "detail": "No card is silent for more than 16 days, so the source has no dormant accounts (generator adds them)."
+    },
+    {
+      "finding": "Calendar days with no transactions",
+      "value": 1,
+      "detail": "1 day(s) in 2019-2020 have no source records: 2020-02-29."
+    },
+    {
+      "finding": "Max merchant distance from home (km)",
+      "value": 152.1,
+      "detail": "Merchants are always within 152 km of home, so impossible travel cannot occur in the source."
+    }
+  ],
+  "columns": [
+    {
+      "column": "trans_num",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 60,
+      "null_pct": 0.0032,
+      "distinct_count": 1855208,
+      "min": "00000ecad06b03d3a8d34b4e30b5ce3b",
+      "max": "ffffef9d89e7d02d86efb1d2ba4de008",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 32.0,
+      "max_length": 32.0,
+      "top_pattern": "99999999999A9999A99999A9999A9999",
+      "top_pattern_share": 2e-06,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "cc_num",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 80,
+      "null_pct": 0.0043,
+      "distinct_count": 1104,
+      "min": "180011453250192",
+      "max": "676372984917",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 11.0,
+      "max_length": 19.0,
+      "top_pattern": "9999999999999999",
+      "top_pattern_share": 0.500647,
+      "top_values": null,
+      "suspected_pii": "PCI - primary account number (value check: 100.0% of values are Luhn-valid card numbers)"
+    },
+    {
+      "column": "merchant",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 60,
+      "null_pct": 0.0032,
+      "distinct_count": 693,
+      "min": "fraud_Abbott-Rogahn",
+      "max": "fraud_Zulauf LLC",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 13.0,
+      "max_length": 43.0,
+      "top_pattern": "AAAAA_AAAAAAA AAA",
+      "top_pattern_share": 0.064887,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "category",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 60,
+      "null_pct": 0.0032,
+      "distinct_count": 18,
+      "min": "GROCERY-POS",
+      "max": "unknown",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 4.0,
+      "max_length": 14.0,
+      "top_pattern": "AAAAAAAA_AAA",
+      "top_pattern_share": 0.165202,
+      "top_values": [
+        {
+          "value": "gas_transport",
+          "count": 188335
+        },
+        {
+          "value": "grocery_pos",
+          "count": 176479
+        },
+        {
+          "value": "home",
+          "count": 175617
+        },
+        {
+          "value": "shopping_pos",
+          "count": 166780
+        },
+        {
+          "value": "kids_pets",
+          "count": 161865
+        },
+        {
+          "value": "shopping_net",
+          "count": 139753
+        },
+        {
+          "value": "entertainment",
+          "count": 134261
+        },
+        {
+          "value": "food_dining",
+          "count": 131000
+        },
+        {
+          "value": "personal_care",
+          "count": 130204
+        },
+        {
+          "value": "health_fitness",
+          "count": 122652
+        },
+        {
+          "value": "misc_pos",
+          "count": 114488
+        },
+        {
+          "value": "misc_net",
+          "count": 90960
+        },
+        {
+          "value": "grocery_net",
+          "count": 64933
+        },
+        {
+          "value": "travel",
+          "count": 58081
+        },
+        {
+          "value": null,
+          "count": 60
+        },
+        {
+          "value": "test_category",
+          "count": 33
+        },
+        {
+          "value": "unknown",
+          "count": 27
+        },
+        {
+          "value": "GROCERY-POS",
+          "count": 22
+        },
+        {
+          "value": "misc net",
+          "count": 18
+        }
+      ],
+      "suspected_pii": NaN
+    },
+    {
+      "column": "txn_ts_raw",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 80,
+      "null_pct": 0.0043,
+      "distinct_count": 1822042,
+      "min": "01/03/2019 09:04",
+      "max": "N/A",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 3.0,
+      "max_length": 19.0,
+      "top_pattern": "9999-99-99 99:99:99",
+      "top_pattern_share": 0.999959,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "txn_ts",
+      "data_type": "TIMESTAMP",
+      "rows": 1855568,
+      "null_count": 180,
+      "null_pct": 0.0097,
+      "distinct_count": 1821984,
+      "min": "1970-01-01 00:00:00",
+      "max": "2021-06-27 02:20:41",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "amount",
+      "data_type": "DECIMAL(18,2)",
+      "rows": 1855568,
+      "null_count": 120,
+      "null_pct": 0.0065,
+      "distinct_count": 61018,
+      "min": "-1036.15",
+      "max": "244418.83",
+      "mean": 73.4979,
+      "std": 763.4629,
+      "percentiles": {
+        "p01": 1.26,
+        "p05": 2.44,
+        "p25": 9.64,
+        "p50": 47.46,
+        "p75": 83.14,
+        "p95": 195.71,
+        "p99": 542.26
+      },
+      "outlier_count": 42230.0,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "first_name",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 361,
+      "min": "Aaron",
+      "max": "Zachary",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 3.0,
+      "max_length": 11.0,
+      "top_pattern": "AAAAAA",
+      "top_pattern_share": 0.246108,
+      "top_values": null,
+      "suspected_pii": "Direct identifier - name"
+    },
+    {
+      "column": "last_name",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 495,
+      "min": "Abbott",
+      "max": "Zuniga",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 2.0,
+      "max_length": 11.0,
+      "top_pattern": "AAAAAA",
+      "top_pattern_share": 0.273777,
+      "top_values": null,
+      "suspected_pii": "Direct identifier - name"
+    },
+    {
+      "column": "gender",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 6,
+      "min": "0",
+      "max": "X",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 1.0,
+      "max_length": 4.0,
+      "top_pattern": "A",
+      "top_pattern_share": 0.999984,
+      "top_values": [
+        {
+          "value": "F",
+          "count": 1016417
+        },
+        {
+          "value": "M",
+          "count": 839101
+        },
+        {
+          "value": "Male",
+          "count": 18
+        },
+        {
+          "value": "U",
+          "count": 15
+        },
+        {
+          "value": "0",
+          "count": 12
+        },
+        {
+          "value": "X",
+          "count": 5
+        }
+      ],
+      "suspected_pii": "Quasi-identifier - demographic"
+    },
+    {
+      "column": "street",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 999,
+      "min": "000 Jennifer Mills",
+      "max": "99736 Rose Shoals Apt. 504",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 12.0,
+      "max_length": 35.0,
+      "top_pattern": "999 AAAAAAA AAAA",
+      "top_pattern_share": 0.016989,
+      "top_values": null,
+      "suspected_pii": "Direct identifier - street address"
+    },
+    {
+      "column": "city",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 906,
+      "min": "Achille",
+      "max": "Zavalla",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 3.0,
+      "max_length": 25.0,
+      "top_pattern": "AAAAAAA",
+      "top_pattern_share": 0.167987,
+      "top_values": null,
+      "suspected_pii": "Quasi-identifier - location"
+    },
+    {
+      "column": "state",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 55,
+      "min": "99",
+      "max": "ZZ",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 2.0,
+      "max_length": 5.0,
+      "top_pattern": "AA",
+      "top_pattern_share": 0.999983,
+      "top_values": [
+        {
+          "value": "TX",
+          "count": 135451
+        },
+        {
+          "value": "NY",
+          "count": 119588
+        },
+        {
+          "value": "PA",
+          "count": 114382
+        },
+        {
+          "value": "CA",
+          "count": 80599
+        },
+        {
+          "value": "OH",
+          "count": 66748
+        },
+        {
+          "value": "MI",
+          "count": 65944
+        },
+        {
+          "value": "IL",
+          "count": 62327
+        },
+        {
+          "value": "FL",
+          "count": 60894
+        },
+        {
+          "value": "AL",
+          "count": 58596
+        },
+        {
+          "value": "MO",
+          "count": 54997
+        },
+        {
+          "value": "MN",
+          "count": 45507
+        },
+        {
+          "value": "AR",
+          "count": 44695
+        },
+        {
+          "value": "NC",
+          "count": 43199
+        },
+        {
+          "value": "VA",
+          "count": 41847
+        },
+        {
+          "value": "WI",
+          "count": 41830
+        },
+        {
+          "value": "SC",
+          "count": 41785
+        },
+        {
+          "value": "KY",
+          "count": 41046
+        },
+        {
+          "value": "IN",
+          "count": 39601
+        },
+        {
+          "value": "IA",
+          "count": 38907
+        },
+        {
+          "value": "OK",
+          "count": 38129
+        },
+        {
+          "value": "GA",
+          "count": 37419
+        },
+        {
+          "value": "MD",
+          "count": 37405
+        },
+        {
+          "value": "WV",
+          "count": 36561
+        },
+        {
+          "value": "NJ",
+          "count": 35171
+        },
+        {
+          "value": "NE",
+          "count": 34466
+        },
+        {
+          "value": "KS",
+          "count": 32986
+        },
+        {
+          "value": "MS",
+          "count": 30089
+        },
+        {
+          "value": "LA",
+          "count": 30003
+        },
+        {
+          "value": "WY",
+          "count": 27824
+        },
+        {
+          "value": "WA",
+          "count": 27083
+        },
+        {
+          "value": "OR",
+          "count": 26435
+        },
+        {
+          "value": "TN",
+          "count": 24946
+        },
+        {
+          "value": "NM",
+          "count": 23505
+        },
+        {
+          "value": "ME",
+          "count": 23453
+        },
+        {
+          "value": "ND",
+          "count": 21220
+        },
+        {
+          "value": "CO",
+          "count": 19796
+        },
+        {
+          "value": "MA",
+          "count": 17602
+        },
+        {
+          "value": "SD",
+          "count": 17597
+        },
+        {
+          "value": "VT",
+          "count": 16846
+        },
+        {
+          "value": "MT",
+          "count": 16844
+        },
+        {
+          "value": "AZ",
+          "count": 15387
+        },
+        {
+          "value": "UT",
+          "count": 15373
+        },
+        {
+          "value": "NH",
+          "count": 11747
+        },
+        {
+          "value": "CT",
+          "count": 10991
+        },
+        {
+          "value": "NV",
+          "count": 8071
+        },
+        {
+          "value": "ID",
+          "count": 8050
+        },
+        {
+          "value": "DC",
+          "count": 5139
+        },
+        {
+          "value": "HI",
+          "count": 3661
+        },
+        {
+          "value": "AK",
+          "count": 2968
+        },
+        {
+          "value": "RI",
+          "count": 758
+        },
+        {
+          "value": "ZZ",
+          "count": 25
+        },
+        {
+          "value": "XX",
+          "count": 24
+        },
+        {
+          "value": "DE",
+          "count": 20
+        },
+        {
+          "value": "Calif",
+          "count": 17
+        },
+        {
+          "value": "99",
+          "count": 14
+        }
+      ],
+      "suspected_pii": NaN
+    },
+    {
+      "column": "zip",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 985,
+      "min": "10018",
+      "max": "99921",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 4.0,
+      "max_length": 5.0,
+      "top_pattern": "99999",
+      "top_pattern_share": 0.937178,
+      "top_values": null,
+      "suspected_pii": "Quasi-identifier - location"
+    },
+    {
+      "column": "home_lat",
+      "data_type": "DOUBLE",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 983,
+      "min": "20.0271",
+      "max": "66.6933",
+      "mean": 38.5392,
+      "std": 5.0716,
+      "percentiles": {
+        "p01": 26.4722,
+        "p05": 29.8826,
+        "p25": 34.6689,
+        "p50": 39.3543,
+        "p75": 41.9404,
+        "p95": 45.8433,
+        "p99": 48.4786
+      },
+      "outlier_count": 2954.0,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": "Quasi-identifier - precise home location"
+    },
+    {
+      "column": "home_long",
+      "data_type": "DOUBLE",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 983,
+      "min": "-165.6723",
+      "max": "-67.9503",
+      "mean": -90.2275,
+      "std": 13.7474,
+      "percentiles": {
+        "p01": -123.0614,
+        "p05": -119.0825,
+        "p25": -96.798,
+        "p50": -87.4769,
+        "p75": -80.158,
+        "p95": -73.5365,
+        "p99": -70.3457
+      },
+      "outlier_count": 6615.0,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": "Quasi-identifier - precise home location"
+    },
+    {
+      "column": "city_pop",
+      "data_type": "BIGINT",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 891,
+      "min": "23",
+      "max": "2906700",
+      "mean": 88623.5585,
+      "std": 301409.4404,
+      "percentiles": {
+        "p01": 53.0,
+        "p05": 139.0,
+        "p25": 741.0,
+        "p50": 2443.0,
+        "p75": 20328.0,
+        "p95": 525713.0,
+        "p99": 1577385.0
+      },
+      "outlier_count": 288217.0,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "job",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 497,
+      "min": "Academic librarian",
+      "max": "Writer",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 3.0,
+      "max_length": 59.0,
+      "top_pattern": "AAAAAAAAAA AAAAAAAA",
+      "top_pattern_share": 0.023675,
+      "top_values": null,
+      "suspected_pii": "Quasi-identifier - demographic"
+    },
+    {
+      "column": "dob_raw",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1092,
+      "min": "1924-10-30",
+      "max": "2025-09-17",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 10.0,
+      "max_length": 10.0,
+      "top_pattern": "9999-99-99",
+      "top_pattern_share": 1.0,
+      "top_values": null,
+      "suspected_pii": "Quasi-identifier - date of birth"
+    },
+    {
+      "column": "dob",
+      "data_type": "DATE",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1092,
+      "min": "1924-10-30",
+      "max": "2025-09-17",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": "Quasi-identifier - date of birth"
+    },
+    {
+      "column": "unix_time",
+      "data_type": "BIGINT",
+      "rows": 1855568,
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1820768,
+      "min": "1325376018",
+      "max": "1388534374",
+      "mean": 1358671857.3939,
+      "std": 18195046.0073,
+      "percentiles": {
+        "p01": 1326348975.26,
+        "p05": 1330097096.4,
+        "p25": 1343013449.0,
+        "p50": 1357080517.5,
+        "p75": 1374578056.75,
+        "p95": 1386782008.25,
+        "p99": 1388195647.65
+      },
+      "outlier_count": 0.0,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "merch_lat",
+      "data_type": "DOUBLE",
+      "rows": 1855568,
+      "null_count": 60,
+      "null_pct": 0.0032,
+      "distinct_count": 1755301,
+      "min": "19.027422",
+      "max": "174.04996",
+      "mean": 38.5409,
+      "std": 5.1259,
+      "percentiles": {
+        "p01": 26.3932,
+        "p05": 29.7538,
+        "p25": 34.7401,
+        "p50": 39.369,
+        "p75": 41.9565,
+        "p95": 46.0032,
+        "p99": 48.5793
+      },
+      "outlier_count": 2990.0,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "merch_long",
+      "data_type": "DOUBLE",
+      "rows": 1855568,
+      "null_count": 60,
+      "null_pct": 0.0032,
+      "distinct_count": 1810945,
+      "min": "-398.709311",
+      "max": "-66.950902",
+      "mean": -90.2305,
+      "std": 13.7796,
+      "percentiles": {
+        "p01": -123.5598,
+        "p05": -119.3093,
+        "p25": -96.8991,
+        "p50": -87.4415,
+        "p75": -80.2459,
+        "p95": -73.365,
+        "p99": -70.3975
+      },
+      "outlier_count": 6639.0,
+      "min_length": NaN,
+      "max_length": NaN,
+      "top_pattern": NaN,
+      "top_pattern_share": NaN,
+      "top_values": null,
+      "suspected_pii": NaN
+    },
+    {
+      "column": "is_fraud_raw",
+      "data_type": "VARCHAR",
+      "rows": 1855568,
+      "null_count": 40,
+      "null_pct": 0.0022,
+      "distinct_count": 5,
+      "min": "-1",
+      "max": "Y",
+      "mean": NaN,
+      "std": NaN,
+      "percentiles": null,
+      "outlier_count": NaN,
+      "min_length": 1.0,
+      "max_length": 2.0,
+      "top_pattern": "9",
+      "top_pattern_share": 0.999984,
+      "top_values": [
+        {
+          "value": "0",
+          "count": 1844843
+        },
+        {
+          "value": "1",
+          "count": 10645
+        },
+        {
+          "value": null,
+          "count": 40
+        },
+        {
+          "value": "Y",
+          "count": 16
+        },
+        {
+          "value": "-1",
+          "count": 13
+        },
+        {
+          "value": "2",
+          "count": 11
+        }
+      ],
+      "suspected_pii": NaN
+    }
+  ]
+}

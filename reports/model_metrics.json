@@ -1,0 +1,236 @@
+{
+  "split": {
+    "train": {
+      "rows": 1240041,
+      "fraud": 7883
+    },
+    "validation": {
+      "rows": 87866,
+      "fraud": 510
+    },
+    "test": {
+      "rows": 525991,
+      "fraud": 2237
+    }
+  },
+  "threshold": {
+    "chosen_by_cost_on_validation": 0.1,
+    "f1_optimal_on_validation": 0.44,
+    "unconstrained_cost_optimum": 0.1,
+    "analyst_capacity_alerts_per_day": 40.0,
+    "validation_alerts_per_day_at_threshold": 18.6,
+    "cost_false_positive_usd": 15.0,
+    "isolation_forest_threshold": 0.549692
+  },
+  "validation_at_threshold": {
+    "threshold": 0.1,
+    "alerts": 557.0,
+    "tp": 481.0,
+    "fp": 76.0,
+    "fn": 29.0,
+    "precision": 0.8636,
+    "recall": 0.9431,
+    "f1": 0.9016,
+    "review_cost": 1140.0,
+    "missed_fraud_amount": 5088.62,
+    "total_cost": 6228.62,
+    "alerts_per_day": 18.6
+  },
+  "comparison_test": {
+    "Rules only (8 SQL rules)": {
+      "alerts": 8436,
+      "tp": 1419,
+      "fp": 7017,
+      "fn": 818,
+      "tn": 516737,
+      "precision": 0.1682,
+      "recall": 0.6343,
+      "f1": 0.2659,
+      "accuracy": 0.985104,
+      "fraud_amount_caught": 965740.01,
+      "fraud_amount_missed": 152821.92
+    },
+    "Isolation Forest only": {
+      "alerts": 11483,
+      "tp": 1558,
+      "fp": 9925,
+      "fn": 679,
+      "tn": 513829,
+      "precision": 0.1357,
+      "recall": 0.6965,
+      "f1": 0.2271,
+      "accuracy": 0.97984,
+      "fraud_amount_caught": 1054475.21,
+      "fraud_amount_missed": 64086.72,
+      "pr_auc": 0.3596
+    },
+    "LightGBM only": {
+      "alerts": 2589,
+      "tp": 2085,
+      "fp": 504,
+      "fn": 152,
+      "tn": 523250,
+      "precision": 0.8053,
+      "recall": 0.9321,
+      "f1": 0.8641,
+      "accuracy": 0.998753,
+      "fraud_amount_caught": 1082483.91,
+      "fraud_amount_missed": 36078.02,
+      "pr_auc": 0.9562
+    },
+    "Hybrid (rules OR LightGBM)": {
+      "alerts": 9427,
+      "tp": 2120,
+      "fp": 7307,
+      "fn": 117,
+      "tn": 516447,
+      "precision": 0.2249,
+      "recall": 0.9477,
+      "f1": 0.3635,
+      "accuracy": 0.985886,
+      "fraud_amount_caught": 1111194.54,
+      "fraud_amount_missed": 7367.39
+    }
+  },
+  "overlap_test": {
+    "All fraud": {
+      "fraud_transactions": 2237,
+      "caught_by_rules": 1419,
+      "caught_by_ml": 2085,
+      "caught_by_hybrid": 2120,
+      "caught_by_both": 1384,
+      "ml_only": 701,
+      "rules_only": 35,
+      "missed_by_rules": 818,
+      "pct_of_rule_misses_caught_by_ml": 85.7,
+      "pct_of_ml_misses_caught_by_rules": 23.03
+    },
+    "Original (Kaggle) fraud": {
+      "fraud_transactions": 2012,
+      "caught_by_rules": 1273,
+      "caught_by_ml": 1910,
+      "caught_by_hybrid": 1932,
+      "caught_by_both": 1251,
+      "ml_only": 659,
+      "rules_only": 22,
+      "missed_by_rules": 739,
+      "pct_of_rule_misses_caught_by_ml": 89.17,
+      "pct_of_ml_misses_caught_by_rules": 21.57
+    },
+    "Injected: invalid_gender": {
+      "fraud_transactions": 1,
+      "caught_by_rules": 0,
+      "caught_by_ml": 1,
+      "caught_by_hybrid": 1,
+      "caught_by_both": 0,
+      "ml_only": 1,
+      "rules_only": 0,
+      "missed_by_rules": 1,
+      "pct_of_rule_misses_caught_by_ml": 100.0,
+      "pct_of_ml_misses_caught_by_rules": 0.0
+    },
+    "Injected: card_testing": {
+      "fraud_transactions": 146,
+      "caught_by_rules": 90,
+      "caught_by_ml": 120,
+      "caught_by_hybrid": 120,
+      "caught_by_both": 90,
+      "ml_only": 30,
+      "rules_only": 0,
+      "missed_by_rules": 56,
+      "pct_of_rule_misses_caught_by_ml": 53.57,
+      "pct_of_ml_misses_caught_by_rules": 0.0
+    },
+    "Injected: dormant_reactivation": {
+      "fraud_transactions": 3,
+      "caught_by_rules": 3,
+      "caught_by_ml": 3,
+      "caught_by_hybrid": 3,
+      "caught_by_both": 3,
+      "ml_only": 0,
+      "rules_only": 0,
+      "missed_by_rules": 0,
+      "pct_of_rule_misses_caught_by_ml": 0.0,
+      "pct_of_ml_misses_caught_by_rules": 0.0
+    },
+    "Injected: impossible_travel": {
+      "fraud_transactions": 9,
+      "caught_by_rules": 9,
+      "caught_by_ml": 7,
+      "caught_by_hybrid": 9,
+      "caught_by_both": 7,
+      "ml_only": 0,
+      "rules_only": 2,
+      "missed_by_rules": 0,
+      "pct_of_rule_misses_caught_by_ml": 0.0,
+      "pct_of_ml_misses_caught_by_rules": 100.0
+    },
+    "Injected: round_amount_structuring": {
+      "fraud_transactions": 24,
+      "caught_by_rules": 22,
+      "caught_by_ml": 13,
+      "caught_by_hybrid": 23,
+      "caught_by_both": 12,
+      "ml_only": 1,
+      "rules_only": 10,
+      "missed_by_rules": 2,
+      "pct_of_rule_misses_caught_by_ml": 50.0,
+      "pct_of_ml_misses_caught_by_rules": 90.91
+    },
+    "Injected: velocity_burst": {
+      "fraud_transactions": 42,
+      "caught_by_rules": 22,
+      "caught_by_ml": 31,
+      "caught_by_hybrid": 32,
+      "caught_by_both": 21,
+      "ml_only": 10,
+      "rules_only": 1,
+      "missed_by_rules": 20,
+      "pct_of_rule_misses_caught_by_ml": 50.0,
+      "pct_of_ml_misses_caught_by_rules": 9.09
+    }
+  },
+  "top_drivers": [
+    {
+      "feature_label": "Merchant category",
+      "mean_abs_shap": 0.7171
+    },
+    {
+      "feature_label": "Transactions in previous 24h",
+      "mean_abs_shap": 0.6243
+    },
+    {
+      "feature_label": "Transaction amount",
+      "mean_abs_shap": 0.5968
+    },
+    {
+      "feature_label": "Spend in previous 24h",
+      "mean_abs_shap": 0.4813
+    },
+    {
+      "feature_label": "Hour of day",
+      "mean_abs_shap": 0.2947
+    },
+    {
+      "feature_label": "Cardholder age",
+      "mean_abs_shap": 0.2264
+    },
+    {
+      "feature_label": "City population",
+      "mean_abs_shap": 0.2096
+    },
+    {
+      "feature_label": "Time since previous transaction",
+      "mean_abs_shap": 0.2013
+    },
+    {
+      "feature_label": "Night-time transaction",
+      "mean_abs_shap": 0.1959
+    },
+    {
+      "feature_label": "Amount z-score vs card history",
+      "mean_abs_shap": 0.189
+    }
+  ],
+  "accuracy_note": "A model that never flags fraud would score 99.57% accuracy on the test period."
+}

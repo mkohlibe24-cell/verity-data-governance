@@ -1,0 +1,959 @@
+{
+  "run_id": "RUN-20261111-164200",
+  "mode": "full",
+  "generated_at": "2026-11-11T16:44:24",
+  "batch_as_of": "2020-12-31 23:59:59",
+  "report_month": "2020-12",
+  "data": {
+    "source_rows": 1852394,
+    "synthetic_rows": 3174,
+    "synthetic_scenario_rows": 1214,
+    "synthetic_defect_rows": 1960,
+    "bronze_rows": 1855568,
+    "quarantined_rows": 1630,
+    "quarantine_pct": 0.0878,
+    "silver_rows": 1853938,
+    "gold_fact_rows": 1853938,
+    "gold_customers": 1024,
+    "gold_merchants": 693
+  },
+  "profiling": {
+    "columns": 24,
+    "pii_columns": 12,
+    "findings": [
+      {
+        "finding": "ZIP codes missing leading zero",
+        "value": 116389,
+        "detail": "116,389 of 1,852,394 source rows (6.3%) have ZIPs shorter than 5 digits: stored as numbers upstream."
+      },
+      {
+        "finding": "unix_time offset from timestamp",
+        "value": 2557.0,
+        "detail": "unix_time is consistently about 2,557 days (about 7.0 years) behind trans_date_trans_time."
+      },
+      {
+        "finding": "Merchant names prefixed 'fraud_'",
+        "value": 100.0,
+        "detail": "100.0% of merchant names start with 'fraud_' (a simulator artefact, not a fraud label). Stripped in silver."
+      },
+      {
+        "finding": "Card numbers shorter than 12 digits",
+        "value": 7,
+        "detail": "7 cards (8,819 rows) have 11-digit card numbers, likely a leading zero lost upstream."
+      },
+      {
+        "finding": "Cardholders under 18 at transaction",
+        "value": 7,
+        "detail": "7 cards (19,722 rows) belong to cardholders under 18: supplementary cards or DOB errors."
+      },
+      {
+        "finding": "Merchants mapped to more than one category",
+        "value": 7,
+        "detail": "7 merchant names appear under two categories: names are not unique keys."
+      },
+      {
+        "finding": "Longest gap between a card's transactions (days)",
+        "value": 16,
+        "detail": "No card is silent for more than 16 days, so the source has no dormant accounts (generator adds them)."
+      },
+      {
+        "finding": "Calendar days with no transactions",
+        "value": 1,
+        "detail": "1 day(s) in 2019-2020 have no source records: 2020-02-29."
+      },
+      {
+        "finding": "Max merchant distance from home (km)",
+        "value": 152.1,
+        "detail": "Merchants are always within 152 km of home, so impossible travel cannot occur in the source."
+      }
+    ]
+  },
+  "dq": {
+    "rules_total": 38,
+    "rules_bronze": 32,
+    "rules_gold": 6,
+    "rules_passed": 14,
+    "rules_failed": 24,
+    "rules_by_dimension": {
+      "Accuracy": 2,
+      "Completeness": 9,
+      "Consistency": 6,
+      "Timeliness": 3,
+      "Uniqueness": 4,
+      "Validity": 14
+    },
+    "quarantine_rules": 17,
+    "flag_rules": 21,
+    "cde_pass_rate_pct": 99.9737,
+    "injected_defects": 1960,
+    "injected_defects_caught": 1960,
+    "injected_defect_detection_pct": 100.0,
+    "detection_by_defect_type": [
+      {
+        "synthetic_tag": "dq:bad_timestamp_format",
+        "injected": 100,
+        "caught": 100
+      },
+      {
+        "synthetic_tag": "dq:dob_after_transaction",
+        "injected": 50,
+        "caught": 50
+      },
+      {
+        "synthetic_tag": "dq:double_posting",
+        "injected": 150,
+        "caught": 150
+      },
+      {
+        "synthetic_tag": "dq:duplicate_record",
+        "injected": 300,
+        "caught": 300
+      },
+      {
+        "synthetic_tag": "dq:extreme_amount",
+        "injected": 40,
+        "caught": 40
+      },
+      {
+        "synthetic_tag": "dq:future_timestamp",
+        "injected": 80,
+        "caught": 80
+      },
+      {
+        "synthetic_tag": "dq:inconsistent_customer",
+        "injected": 60,
+        "caught": 60
+      },
+      {
+        "synthetic_tag": "dq:invalid_card_number",
+        "injected": 80,
+        "caught": 80
+      },
+      {
+        "synthetic_tag": "dq:invalid_category",
+        "injected": 100,
+        "caught": 100
+      },
+      {
+        "synthetic_tag": "dq:invalid_coordinates",
+        "injected": 60,
+        "caught": 60
+      },
+      {
+        "synthetic_tag": "dq:invalid_fraud_flag",
+        "injected": 40,
+        "caught": 40
+      },
+      {
+        "synthetic_tag": "dq:invalid_gender",
+        "injected": 50,
+        "caught": 50
+      },
+      {
+        "synthetic_tag": "dq:invalid_state",
+        "injected": 80,
+        "caught": 80
+      },
+      {
+        "synthetic_tag": "dq:missing_fraud_label",
+        "injected": 40,
+        "caught": 40
+      },
+      {
+        "synthetic_tag": "dq:missing_merchant_coords",
+        "injected": 60,
+        "caught": 60
+      },
+      {
+        "synthetic_tag": "dq:negative_amount",
+        "injected": 150,
+        "caught": 150
+      },
+      {
+        "synthetic_tag": "dq:null_amount",
+        "injected": 120,
+        "caught": 120
+      },
+      {
+        "synthetic_tag": "dq:null_card_number",
+        "injected": 80,
+        "caught": 80
+      },
+      {
+        "synthetic_tag": "dq:null_category",
+        "injected": 60,
+        "caught": 60
+      },
+      {
+        "synthetic_tag": "dq:null_merchant",
+        "injected": 60,
+        "caught": 60
+      },
+      {
+        "synthetic_tag": "dq:null_timestamp",
+        "injected": 80,
+        "caught": 80
+      },
+      {
+        "synthetic_tag": "dq:null_trans_num",
+        "injected": 60,
+        "caught": 60
+      },
+      {
+        "synthetic_tag": "dq:stale_timestamp",
+        "injected": 60,
+        "caught": 60
+      }
+    ],
+    "source_data_failures_by_rule": [
+      {
+        "rule_id": "DQ-V06",
+        "rule_name": "ZIP code is 5 digits",
+        "source_failed": 116389,
+        "status": "FAIL"
+      },
+      {
+        "rule_id": "DQ-V11",
+        "rule_name": "Card number has a valid length (12-19 digits)",
+        "source_failed": 8819,
+        "status": "FAIL"
+      },
+      {
+        "rule_id": "DQ-A01",
+        "rule_name": "Cardholder is an adult at transaction date",
+        "source_failed": 19722,
+        "status": "FAIL"
+      },
+      {
+        "rule_id": "DQ-K01",
+        "rule_name": "unix_time agrees with the transaction timestamp",
+        "source_failed": 1852394,
+        "status": "FAIL"
+      },
+      {
+        "rule_id": "DQ-K04",
+        "rule_name": "Each merchant maps to one category",
+        "source_failed": 14951,
+        "status": "FAIL"
+      }
+    ],
+    "quarantine_by_reason": [
+      {
+        "primary_reason": "DUPLICATE_TRANS_ID",
+        "n": 300,
+        "synthetic": 300
+      },
+      {
+        "primary_reason": "DOUBLE_POSTING",
+        "n": 150,
+        "synthetic": 150
+      },
+      {
+        "primary_reason": "NON_POSITIVE_AMOUNT",
+        "n": 150,
+        "synthetic": 150
+      },
+      {
+        "primary_reason": "NULL_AMOUNT",
+        "n": 120,
+        "synthetic": 120
+      },
+      {
+        "primary_reason": "BAD_TIMESTAMP_FORMAT",
+        "n": 100,
+        "synthetic": 100
+      },
+      {
+        "primary_reason": "INVALID_CATEGORY",
+        "n": 100,
+        "synthetic": 100
+      },
+      {
+        "primary_reason": "CARD_FAILS_LUHN",
+        "n": 80,
+        "synthetic": 80
+      },
+      {
+        "primary_reason": "FUTURE_DATED",
+        "n": 80,
+        "synthetic": 80
+      },
+      {
+        "primary_reason": "NULL_CARD",
+        "n": 80,
+        "synthetic": 80
+      },
+      {
+        "primary_reason": "NULL_TIMESTAMP",
+        "n": 80,
+        "synthetic": 80
+      },
+      {
+        "primary_reason": "DOB_AFTER_TXN",
+        "n": 72,
+        "synthetic": 72
+      },
+      {
+        "primary_reason": "INVALID_COORDINATES",
+        "n": 60,
+        "synthetic": 60
+      },
+      {
+        "primary_reason": "NULL_CATEGORY",
+        "n": 60,
+        "synthetic": 60
+      },
+      {
+        "primary_reason": "NULL_MERCHANT",
+        "n": 60,
+        "synthetic": 60
+      },
+      {
+        "primary_reason": "NULL_TRANS_ID",
+        "n": 60,
+        "synthetic": 60
+      },
+      {
+        "primary_reason": "INVALID_FRAUD_LABEL",
+        "n": 40,
+        "synthetic": 40
+      },
+      {
+        "primary_reason": "STALE_RECORD",
+        "n": 38,
+        "synthetic": 38
+      }
+    ],
+    "failed_rules": [
+      {
+        "rule_id": "DQ-C01",
+        "rule_name": "Transaction ID is populated",
+        "records_failed": 60,
+        "failure_pct": 0.0032,
+        "threshold_pct": 0.0,
+        "severity": "critical"
+      },
+      {
+        "rule_id": "DQ-C02",
+        "rule_name": "Card number is populated",
+        "records_failed": 80,
+        "failure_pct": 0.0043,
+        "threshold_pct": 0.0,
+        "severity": "critical"
+      },
+      {
+        "rule_id": "DQ-C03",
+        "rule_name": "Transaction amount is populated",
+        "records_failed": 120,
+        "failure_pct": 0.0065,
+        "threshold_pct": 0.0,
+        "severity": "critical"
+      },
+      {
+        "rule_id": "DQ-C04",
+        "rule_name": "Transaction timestamp is populated",
+        "records_failed": 80,
+        "failure_pct": 0.0043,
+        "threshold_pct": 0.0,
+        "severity": "critical"
+      },
+      {
+        "rule_id": "DQ-C05",
+        "rule_name": "Merchant name is populated",
+        "records_failed": 60,
+        "failure_pct": 0.0032,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-C06",
+        "rule_name": "Merchant category is populated",
+        "records_failed": 60,
+        "failure_pct": 0.0032,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-C09",
+        "rule_name": "Every business day has transaction volume",
+        "records_failed": 1,
+        "failure_pct": 0.1368,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-V01",
+        "rule_name": "Transaction timestamp is a valid date-time",
+        "records_failed": 100,
+        "failure_pct": 0.0054,
+        "threshold_pct": 0.0,
+        "severity": "critical"
+      },
+      {
+        "rule_id": "DQ-V02",
+        "rule_name": "Transaction amount is a positive number",
+        "records_failed": 150,
+        "failure_pct": 0.0081,
+        "threshold_pct": 0.0,
+        "severity": "critical"
+      },
+      {
+        "rule_id": "DQ-V04",
+        "rule_name": "Merchant category is a recognised code",
+        "records_failed": 100,
+        "failure_pct": 0.0054,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-V06",
+        "rule_name": "ZIP code is 5 digits",
+        "records_failed": 116571,
+        "failure_pct": 6.2822,
+        "threshold_pct": 1.0,
+        "severity": "medium"
+      },
+      {
+        "rule_id": "DQ-V07",
+        "rule_name": "Coordinates are within valid ranges",
+        "records_failed": 60,
+        "failure_pct": 0.0032,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-V09",
+        "rule_name": "Fraud label is 0 or 1",
+        "records_failed": 40,
+        "failure_pct": 0.0022,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-V10",
+        "rule_name": "Card number passes the Luhn check digit",
+        "records_failed": 80,
+        "failure_pct": 0.0043,
+        "threshold_pct": 0.0,
+        "severity": "critical"
+      },
+      {
+        "rule_id": "DQ-V11",
+        "rule_name": "Card number has a valid length (12-19 digits)",
+        "records_failed": 8847,
+        "failure_pct": 0.4768,
+        "threshold_pct": 0.1,
+        "severity": "medium"
+      },
+      {
+        "rule_id": "DQ-A01",
+        "rule_name": "Cardholder is an adult at transaction date",
+        "records_failed": 19759,
+        "failure_pct": 1.0648,
+        "threshold_pct": 0.5,
+        "severity": "medium"
+      },
+      {
+        "rule_id": "DQ-U01",
+        "rule_name": "Transaction ID is unique",
+        "records_failed": 300,
+        "failure_pct": 0.0162,
+        "threshold_pct": 0.0,
+        "severity": "critical"
+      },
+      {
+        "rule_id": "DQ-U02",
+        "rule_name": "No double posting (same card, time, amount, merchant)",
+        "records_failed": 450,
+        "failure_pct": 0.0243,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-K01",
+        "rule_name": "unix_time agrees with the transaction timestamp",
+        "records_failed": 1855388,
+        "failure_pct": 99.9903,
+        "threshold_pct": 1.0,
+        "severity": "low"
+      },
+      {
+        "rule_id": "DQ-K02",
+        "rule_name": "Date of birth is consistent for each card",
+        "records_failed": 110,
+        "failure_pct": 0.0059,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-K03",
+        "rule_name": "Date of birth is before the transaction date",
+        "records_failed": 72,
+        "failure_pct": 0.0039,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-K04",
+        "rule_name": "Each merchant maps to one category",
+        "records_failed": 15065,
+        "failure_pct": 0.8119,
+        "threshold_pct": 0.5,
+        "severity": "low"
+      },
+      {
+        "rule_id": "DQ-T01",
+        "rule_name": "No future-dated transactions",
+        "records_failed": 80,
+        "failure_pct": 0.0043,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      },
+      {
+        "rule_id": "DQ-T03",
+        "rule_name": "No records before the retention start date",
+        "records_failed": 60,
+        "failure_pct": 0.0032,
+        "threshold_pct": 0.0,
+        "severity": "high"
+      }
+    ]
+  },
+  "rule_suggestions": {
+    "proposed": 21,
+    "pending": 21
+  },
+  "reconciliation": {
+    "controls": 8,
+    "breaks": 0
+  },
+  "contracts": {
+    "products": 4,
+    "clauses": 32,
+    "clauses_passed": 32
+  },
+  "catalog": {
+    "columns": 127,
+    "curated_pct": 98.4,
+    "cdes": 27
+  },
+  "controls": {
+    "total": 64,
+    "by_type": {
+      "Corrective": 1,
+      "Detective": 43,
+      "Preventive": 20
+    }
+  },
+  "issues": {
+    "total": 25,
+    "open": 25,
+    "open_by_severity": {
+      "critical": 8,
+      "high": 12,
+      "low": 2,
+      "medium": 3
+    },
+    "open_by_source": {
+      "DQ rule": 24,
+      "KRI breach": 1
+    }
+  },
+  "monitoring": {
+    "rules": 8,
+    "rule_hits": 41578,
+    "alerts": 32334,
+    "alerts_pct_of_gold": 1.744,
+    "alerts_by_priority": {
+      "P1": 2740,
+      "P2": 8004,
+      "P3": 21276,
+      "P4": 314
+    },
+    "rule_performance": [
+      {
+        "rule_id": "TM-01",
+        "name": "High value vs cardholder baseline",
+        "hits_all_periods": 17223,
+        "hits_test": 4608,
+        "fraud_hits_test": 731,
+        "precision_test_pct": 15.86,
+        "recall_test_pct": 32.68,
+        "unique_fraud_catches_test": 125,
+        "source_fraud_hits_test": 699
+      },
+      {
+        "rule_id": "TM-02",
+        "name": "Transaction velocity burst",
+        "hits_all_periods": 379,
+        "hits_test": 103,
+        "fraud_hits_test": 103,
+        "precision_test_pct": 100.0,
+        "recall_test_pct": 4.6,
+        "unique_fraud_catches_test": 19,
+        "source_fraud_hits_test": 1
+      },
+      {
+        "rule_id": "TM-03",
+        "name": "Impossible travel",
+        "hits_all_periods": 50,
+        "hits_test": 13,
+        "fraud_hits_test": 9,
+        "precision_test_pct": 69.23,
+        "recall_test_pct": 0.4,
+        "unique_fraud_catches_test": 3,
+        "source_fraud_hits_test": 0
+      },
+      {
+        "rule_id": "TM-04",
+        "name": "Card testing pattern",
+        "hits_all_periods": 209,
+        "hits_test": 76,
+        "fraud_hits_test": 76,
+        "precision_test_pct": 100.0,
+        "recall_test_pct": 3.4,
+        "unique_fraud_catches_test": 0,
+        "source_fraud_hits_test": 0
+      },
+      {
+        "rule_id": "TM-05",
+        "name": "Round-amount structuring",
+        "hits_all_periods": 43,
+        "hits_test": 8,
+        "fraud_hits_test": 8,
+        "precision_test_pct": 100.0,
+        "recall_test_pct": 0.36,
+        "unique_fraud_catches_test": 1,
+        "source_fraud_hits_test": 0
+      },
+      {
+        "rule_id": "TM-06",
+        "name": "Unusual hour high spend",
+        "hits_all_periods": 17511,
+        "hits_test": 4660,
+        "fraud_hits_test": 1105,
+        "precision_test_pct": 23.71,
+        "recall_test_pct": 49.4,
+        "unique_fraud_catches_test": 357,
+        "source_fraud_hits_test": 1099
+      },
+      {
+        "rule_id": "TM-07",
+        "name": "Dormant account reactivation",
+        "hits_all_periods": 157,
+        "hits_test": 23,
+        "fraud_hits_test": 23,
+        "precision_test_pct": 100.0,
+        "recall_test_pct": 1.03,
+        "unique_fraud_catches_test": 17,
+        "source_fraud_hits_test": 15
+      },
+      {
+        "rule_id": "TM-08",
+        "name": "Merchant-category amount outlier",
+        "hits_all_periods": 6006,
+        "hits_test": 1591,
+        "fraud_hits_test": 245,
+        "precision_test_pct": 15.4,
+        "recall_test_pct": 10.95,
+        "unique_fraud_catches_test": 48,
+        "source_fraud_hits_test": 228
+      }
+    ]
+  },
+  "ml": {
+    "split": {
+      "train": {
+        "rows": 1240041,
+        "fraud": 7883
+      },
+      "validation": {
+        "rows": 87866,
+        "fraud": 510
+      },
+      "test": {
+        "rows": 525991,
+        "fraud": 2237
+      }
+    },
+    "threshold": {
+      "chosen_by_cost_on_validation": 0.1,
+      "f1_optimal_on_validation": 0.44,
+      "unconstrained_cost_optimum": 0.1,
+      "analyst_capacity_alerts_per_day": 40.0,
+      "validation_alerts_per_day_at_threshold": 18.6,
+      "cost_false_positive_usd": 15.0,
+      "isolation_forest_threshold": 0.549692
+    },
+    "validation_at_threshold": {
+      "threshold": 0.1,
+      "alerts": 557.0,
+      "tp": 481.0,
+      "fp": 76.0,
+      "fn": 29.0,
+      "precision": 0.8636,
+      "recall": 0.9431,
+      "f1": 0.9016,
+      "review_cost": 1140.0,
+      "missed_fraud_amount": 5088.62,
+      "total_cost": 6228.62,
+      "alerts_per_day": 18.6
+    },
+    "comparison_test": {
+      "Rules only (8 SQL rules)": {
+        "alerts": 8436,
+        "tp": 1419,
+        "fp": 7017,
+        "fn": 818,
+        "tn": 516737,
+        "precision": 0.1682,
+        "recall": 0.6343,
+        "f1": 0.2659,
+        "accuracy": 0.985104,
+        "fraud_amount_caught": 965740.01,
+        "fraud_amount_missed": 152821.92
+      },
+      "Isolation Forest only": {
+        "alerts": 11483,
+        "tp": 1558,
+        "fp": 9925,
+        "fn": 679,
+        "tn": 513829,
+        "precision": 0.1357,
+        "recall": 0.6965,
+        "f1": 0.2271,
+        "accuracy": 0.97984,
+        "fraud_amount_caught": 1054475.21,
+        "fraud_amount_missed": 64086.72,
+        "pr_auc": 0.3596
+      },
+      "LightGBM only": {
+        "alerts": 2589,
+        "tp": 2085,
+        "fp": 504,
+        "fn": 152,
+        "tn": 523250,
+        "precision": 0.8053,
+        "recall": 0.9321,
+        "f1": 0.8641,
+        "accuracy": 0.998753,
+        "fraud_amount_caught": 1082483.91,
+        "fraud_amount_missed": 36078.02,
+        "pr_auc": 0.9562
+      },
+      "Hybrid (rules OR LightGBM)": {
+        "alerts": 9427,
+        "tp": 2120,
+        "fp": 7307,
+        "fn": 117,
+        "tn": 516447,
+        "precision": 0.2249,
+        "recall": 0.9477,
+        "f1": 0.3635,
+        "accuracy": 0.985886,
+        "fraud_amount_caught": 1111194.54,
+        "fraud_amount_missed": 7367.39
+      }
+    },
+    "overlap_test": {
+      "All fraud": {
+        "fraud_transactions": 2237,
+        "caught_by_rules": 1419,
+        "caught_by_ml": 2085,
+        "caught_by_hybrid": 2120,
+        "caught_by_both": 1384,
+        "ml_only": 701,
+        "rules_only": 35,
+        "missed_by_rules": 818,
+        "pct_of_rule_misses_caught_by_ml": 85.7,
+        "pct_of_ml_misses_caught_by_rules": 23.03
+      },
+      "Original (Kaggle) fraud": {
+        "fraud_transactions": 2012,
+        "caught_by_rules": 1273,
+        "caught_by_ml": 1910,
+        "caught_by_hybrid": 1932,
+        "caught_by_both": 1251,
+        "ml_only": 659,
+        "rules_only": 22,
+        "missed_by_rules": 739,
+        "pct_of_rule_misses_caught_by_ml": 89.17,
+        "pct_of_ml_misses_caught_by_rules": 21.57
+      },
+      "Injected: invalid_gender": {
+        "fraud_transactions": 1,
+        "caught_by_rules": 0,
+        "caught_by_ml": 1,
+        "caught_by_hybrid": 1,
+        "caught_by_both": 0,
+        "ml_only": 1,
+        "rules_only": 0,
+        "missed_by_rules": 1,
+        "pct_of_rule_misses_caught_by_ml": 100.0,
+        "pct_of_ml_misses_caught_by_rules": 0.0
+      },
+      "Injected: card_testing": {
+        "fraud_transactions": 146,
+        "caught_by_rules": 90,
+        "caught_by_ml": 120,
+        "caught_by_hybrid": 120,
+        "caught_by_both": 90,
+        "ml_only": 30,
+        "rules_only": 0,
+        "missed_by_rules": 56,
+        "pct_of_rule_misses_caught_by_ml": 53.57,
+        "pct_of_ml_misses_caught_by_rules": 0.0
+      },
+      "Injected: dormant_reactivation": {
+        "fraud_transactions": 3,
+        "caught_by_rules": 3,
+        "caught_by_ml": 3,
+        "caught_by_hybrid": 3,
+        "caught_by_both": 3,
+        "ml_only": 0,
+        "rules_only": 0,
+        "missed_by_rules": 0,
+        "pct_of_rule_misses_caught_by_ml": 0.0,
+        "pct_of_ml_misses_caught_by_rules": 0.0
+      },
+      "Injected: impossible_travel": {
+        "fraud_transactions": 9,
+        "caught_by_rules": 9,
+        "caught_by_ml": 7,
+        "caught_by_hybrid": 9,
+        "caught_by_both": 7,
+        "ml_only": 0,
+        "rules_only": 2,
+        "missed_by_rules": 0,
+        "pct_of_rule_misses_caught_by_ml": 0.0,
+        "pct_of_ml_misses_caught_by_rules": 100.0
+      },
+      "Injected: round_amount_structuring": {
+        "fraud_transactions": 24,
+        "caught_by_rules": 22,
+        "caught_by_ml": 13,
+        "caught_by_hybrid": 23,
+        "caught_by_both": 12,
+        "ml_only": 1,
+        "rules_only": 10,
+        "missed_by_rules": 2,
+        "pct_of_rule_misses_caught_by_ml": 50.0,
+        "pct_of_ml_misses_caught_by_rules": 90.91
+      },
+      "Injected: velocity_burst": {
+        "fraud_transactions": 42,
+        "caught_by_rules": 22,
+        "caught_by_ml": 31,
+        "caught_by_hybrid": 32,
+        "caught_by_both": 21,
+        "ml_only": 10,
+        "rules_only": 1,
+        "missed_by_rules": 20,
+        "pct_of_rule_misses_caught_by_ml": 50.0,
+        "pct_of_ml_misses_caught_by_rules": 9.09
+      }
+    },
+    "top_drivers": [
+      {
+        "feature_label": "Merchant category",
+        "mean_abs_shap": 0.7171
+      },
+      {
+        "feature_label": "Transactions in previous 24h",
+        "mean_abs_shap": 0.6243
+      },
+      {
+        "feature_label": "Transaction amount",
+        "mean_abs_shap": 0.5968
+      },
+      {
+        "feature_label": "Spend in previous 24h",
+        "mean_abs_shap": 0.4813
+      },
+      {
+        "feature_label": "Hour of day",
+        "mean_abs_shap": 0.2947
+      },
+      {
+        "feature_label": "Cardholder age",
+        "mean_abs_shap": 0.2264
+      },
+      {
+        "feature_label": "City population",
+        "mean_abs_shap": 0.2096
+      },
+      {
+        "feature_label": "Time since previous transaction",
+        "mean_abs_shap": 0.2013
+      },
+      {
+        "feature_label": "Night-time transaction",
+        "mean_abs_shap": 0.1959
+      },
+      {
+        "feature_label": "Amount z-score vs card history",
+        "mean_abs_shap": 0.189
+      }
+    ],
+    "accuracy_note": "A model that never flags fraud would score 99.57% accuracy on the test period."
+  },
+  "kris": [
+    {
+      "kri_id": "KRI-01",
+      "name": "CDE data quality pass rate",
+      "value": 99.9737,
+      "unit": "%",
+      "rag": "Green"
+    },
+    {
+      "kri_id": "KRI-02",
+      "name": "Open critical/high DQ issues",
+      "value": 20.0,
+      "unit": "count",
+      "rag": "Red"
+    },
+    {
+      "kri_id": "KRI-03",
+      "name": "Reconciliation breaks",
+      "value": 0.0,
+      "unit": "count",
+      "rag": "Green"
+    },
+    {
+      "kri_id": "KRI-04",
+      "name": "Quarantine rate",
+      "value": 0.0878,
+      "unit": "%",
+      "rag": "Green"
+    },
+    {
+      "kri_id": "KRI-05",
+      "name": "Data contract compliance",
+      "value": 100.0,
+      "unit": "%",
+      "rag": "Green"
+    },
+    {
+      "kri_id": "KRI-06",
+      "name": "Alert false-positive rate",
+      "value": 86.92,
+      "unit": "%",
+      "rag": "Green"
+    },
+    {
+      "kri_id": "KRI-07",
+      "name": "Fraud detection rate",
+      "value": 95.41,
+      "unit": "%",
+      "rag": "Green"
+    },
+    {
+      "kri_id": "KRI-08",
+      "name": "Undetected fraud loss",
+      "value": 0.85,
+      "unit": "bps",
+      "rag": "Green"
+    }
+  ],
+  "lineage_edges": 25
+}

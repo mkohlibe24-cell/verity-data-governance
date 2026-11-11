@@ -1,0 +1,18 @@
+feature,mean_abs_shap,feature_label
+category,0.7171397029281585,Merchant category
+txn_count_24h,0.6243079001573506,Transactions in previous 24h
+amount,0.5967657269698634,Transaction amount
+amount_sum_24h,0.4813316882219696,Spend in previous 24h
+hour_of_day,0.2947084415734941,Hour of day
+age,0.22635489018342358,Cardholder age
+log_city_pop,0.20959440429806564,City population
+hours_since_prev,0.20132429849845523,Time since previous transaction
+is_night,0.19589691227070086,Night-time transaction
+amount_zscore,0.18896671398310605,Amount z-score vs card history
+prior_night_share,0.18183722710908368,Card's usual night-time share
+day_of_week,0.16650026149497732,Day of week
+log_amount,0.14931703920376668,Transaction amount (log)
+distance_from_home_km,0.1422703244340347,Distance from home
+amount_to_prior_avg,0.13498801162462687,Amount vs card's average
+txn_count_1h,0.04707425578972943,Transactions in previous hour
+is_new_category,0.0035743524064355773,First purchase in this category
