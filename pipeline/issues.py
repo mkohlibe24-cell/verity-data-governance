@@ -105,12 +105,15 @@ def contract_findings(ctx: RunContext) -> list[dict]:
 def kri_findings(ctx: RunContext) -> list[dict]:
     reds = ctx.con.execute(
         "SELECT * FROM governance.kri_results WHERE run_id = ? AND rag = 'Red'", [ctx.run_id]).df()
+    rca = load_rca(ctx.cfg)
+    default = {"root_cause": "Hypothesis to confirm: see the contributing rules/controls for this KRI.", "five_whys": []}
     return [{
         "source_type": "KRI breach", "source_ref": f"KRI:{k.kri_id}",
         "title": f"{k.kri_id} red: {k.name} = {k.value} {k.unit}",
         "description": f"{k.name} is {k.value} {k.unit} for {k.period} (red threshold {k.red_threshold}). {k.formula}.",
         "severity": "high", "owner": k.owner,
-        "root_cause": "Hypothesis to confirm: see the contributing rules/controls for this KRI.", "five_whys": "",
+        "root_cause": rca.get(k.kri_id, default)["root_cause"],
+        "five_whys": " | ".join(rca.get(k.kri_id, default)["five_whys"]),
         "remediation_plan": k.escalation, "records_affected": None, "synthetic_share_pct": None,
     } for k in reds.itertuples()]
 

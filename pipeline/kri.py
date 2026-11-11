@@ -51,12 +51,18 @@ def monitoring_kris(con, month: str) -> dict[str, float | None]:
     }
 
 
+def open_critical_high_dq_issues(con) -> int:
+    """KRI-02. KRI-breach issues are excluded: otherwise KRI-02 counts its own breach and drifts between runs."""
+    return con.execute("SELECT count(*) FROM governance.issue_log WHERE status = 'Open'"
+                       " AND severity IN ('critical', 'high') AND source_type <> 'KRI breach'").fetchall()[0][0]
+
+
 def compute(ctx: RunContext) -> pd.DataFrame:
     con, cfg, run_id = ctx.con, ctx.cfg, ctx.run_id
     q = lambda sql, p=None: con.execute(sql, p or []).fetchall()[0][0]  # noqa: E731
     cde = q(f"""SELECT 100.0 * (1 - sum(records_failed) / sum(records_checked)) FROM governance.dq_rule_results
                 WHERE run_id = '{run_id}' AND is_cde AND check_type NOT IN ('freshness', 'daily_volume')""")
-    open_hi = q("SELECT count(*) FROM governance.issue_log WHERE status = 'Open' AND severity IN ('critical', 'high')")
+    open_hi = open_critical_high_dq_issues(con)
     breaks = q(f"SELECT count(*) FROM governance.reconciliation_results WHERE run_id = '{run_id}' AND status = 'BREAK'")
     quarantine = q("SELECT 100.0 * (SELECT count(*) FROM silver.dq_quarantine) / (SELECT count(*) FROM bronze.transactions_raw)")
     contract = q(f"SELECT 100.0 * avg(CASE WHEN status = 'PASS' THEN 1 ELSE 0 END) FROM governance.contract_results "

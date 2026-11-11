@@ -36,7 +36,7 @@ that a data product built on governed data (fraud monitoring) can be trusted and
 | Monitoring data product | 8 SQL detective rules (window functions, CTEs), LightGBM + Isolation Forest with a time-based split, a cost-based threshold and per-alert SHAP reasons | `sql/monitoring/`, `pipeline/ml.py` |
 | KRIs and reporting | 8 KRIs with red/amber/green thresholds; Excel "Data Quality & Governance Report" | `reports/Verity_DQ_Governance_Report.xlsx` |
 | Web app | FastAPI API (roles enforced server-side, maker-checker, audit trail) and a React app: Overview, Data Governance, Issues, Monitoring, Reports | `api/`, `web/` |
-| Engineering | One-command pipeline with run audit log, 50 pytest tests, GitHub Actions CI (lint, tests, sample run, web build) | `pipeline/run_pipeline.py`, `tests/` |
+| Engineering | One-command pipeline with run audit log, 51 pytest tests, GitHub Actions CI (lint, tests, sample run, web build) | `pipeline/run_pipeline.py`, `tests/` |
 
 ## Architecture
 
@@ -60,7 +60,7 @@ flowchart LR
     KRI --> XL["Excel governance report"]
 ```
 
-## Key results (full run `RUN-20261111-180313`, all numbers from `reports/results.json`)
+## Key results (full run `RUN-20261111-201416`, all numbers from `reports/results.json`)
 
 **Data quality and governance**
 
@@ -76,7 +76,7 @@ flowchart LR
 | PII | 12 columns flagged by the profiler; none in raw form in gold |
 | Rule suggestions from profiling | 21 proposed: 1 rejected by the data steward (range learned from corrupted records), 20 pending review |
 | Catalog / contracts / controls | 127 columns (98.4% curated, 27 CDEs); 4 contracts, 32 of 32 clauses passed; 64 controls |
-| Issue log | 25 open issues: 24 from DQ rules (18 caused only by injected test defects, 6 by genuine source-data issues with 5-Whys root causes) and 1 from a KRI breach |
+| Issue log | 26 open issues: 24 from DQ rules (18 caused only by injected test defects, 6 by genuine source-data issues with 5-Whys root causes) and 2 from KRI breaches (KRI-02, KRI-06) |
 
 **Monitoring data product (test period Jul-Dec 2020: 525,909 transactions, 2,237 fraud)**
 
@@ -95,9 +95,12 @@ flowchart LR
   the amount of each missed fraud), within an analyst capacity of 40 alerts a day.
 - Accuracy is not used: a model that never flags fraud would score 99.57% on this period.
 - Two full runs produce identical results (deterministic training and tie-broken SQL windows).
-- December 2020 KRIs: fraud detection rate 95.4% (Green), alert false-positive rate 86.9% (Green),
-  undetected fraud loss 0.85 bps of spend (Green). KRI-02 (open critical/high issues) is Red
-  by design, because defects were injected to exercise the controls.
+- December 2020 KRIs: fraud detection rate 95.4% (Green), undetected fraud loss 0.85 bps of spend
+  (Green), alert false-positive rate 86.9% (Red). KRI-06's thresholds were recalibrated after review
+  using only pre-reporting-period data: the December holiday peak doubles volume, and the spend-based
+  rules fire on legitimate purchases (5-Whys in the issue log, rationale in `DATA_GOVERNANCE.md`).
+  KRI-02 (19 open critical/high DQ issues) is Red by design, because defects were injected to
+  exercise the controls.
 
 **Read these honestly.** The source is a public *simulation*, and its fraud is easier to learn than
 real fraud, so model scores are higher than a real portfolio would show. Generator rows are always
@@ -181,7 +184,7 @@ python pipeline/run_pipeline.py --sample
 #   data/raw/kaggle_fraud.zip
 python pipeline/run_pipeline.py
 
-pytest                          # 50 tests
+pytest                          # 51 tests
 ruff check pipeline tests api   # lint
 ```
 
@@ -238,7 +241,7 @@ pipeline/        one module per step; run_pipeline.py runs all 16 steps
 sql/monitoring/  8 monitoring rules as .sql files
 api/             FastAPI app (main.py) and maker-checker case logic (casework.py)
 web/             React + Vite + TypeScript app; scripts/screenshots.mjs (Playwright)
-tests/           50 pytest tests: hand-made datasets, maker-checker rules, API security
+tests/           51 pytest tests: hand-made datasets, maker-checker rules, API security
 data/sample/     CC0 sample for fresh clones and CI
 reports/, docs/  generated outputs
 ```

@@ -27,7 +27,7 @@ Kaggle CSVs (CC0) + generator rows (tagged)
 
 | Tier | Scope | Target |
 |---|---|---|
-| 1 | Ingestion + profiling, DQ engine (20+ rules) + quarantine + scorecard + rule suggestions, gold + masking, reconciliation, catalog, contracts, lineage, control inventory, issue log, run audit log, 8 TM rules, Isolation Forest + LightGBM, 8 KRIs, Excel report, tests, CI, docs | Done 11 Nov (run RUN-20261111-180313) |
+| 1 | Ingestion + profiling, DQ engine (20+ rules) + quarantine + scorecard + rule suggestions, gold + masking, reconciliation, catalog, contracts, lineage, control inventory, issue log, run audit log, 8 TM rules, Isolation Forest + LightGBM, 8 KRIs, Excel report, tests, CI, docs | Done 11 Nov (run RUN-20261111-201416) |
 | 2 | FastAPI + React app: Overview, Data Governance, Issues, Monitoring (maker-checker), Reports | Done 11 Nov |
 | 3 | BigQuery sandbox, Power BI kit, PowerPoint, control testing workpapers + RCM, model card, Playwright E2E, Vercel + Render | after applying |
 
@@ -43,4 +43,5 @@ Kaggle CSVs (CC0) + generator rows (tagged)
   Kaggle fraud separately, so injected scenarios don't inflate the results.
 - ML: train before 2020-06-01, choose the threshold on June 2020, test on Jul-Dec 2020.
 - No SHAP package: LightGBM's built-in TreeSHAP (`pred_contrib`) gives the same per-alert reasons.
-- KRI thresholds were set before looking at results.
+- KRI thresholds were set before looking at results. KRI-06 was recalibrated on 11 Nov after review,
+  using only pre-reporting-period data (rationale in `config.yaml`).

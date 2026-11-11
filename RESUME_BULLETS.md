@@ -22,7 +22,7 @@ github.com/mkohlibe24-cell/verity-data-governance
   functions, CTEs) plus a LightGBM model with a time-based split and cost-based threshold; the ML
   layer caught **89% of fraud missed by rules alone**, raising recall from **63% to 95%** (PR-AUC 0.96).
 - Designed **8 KRIs** with red/amber/green thresholds and an automated Excel **governance report**
-  (DQ scorecard, issue log with 5-Whys root causes, control inventory), backed by 50 pytest tests
+  (DQ scorecard, issue log with 5-Whys root causes, control inventory), backed by 51 pytest tests
   and GitHub Actions CI.
 
 ## Shorter versions (if space is tight)
@@ -46,7 +46,7 @@ github.com/mkohlibe24-cell/verity-data-governance
 | 127 columns, 27 CDEs, 4 contracts, 64 controls | `catalog.*`, `contracts.products`, `controls.total` |
 | 89% of rule misses caught by ML | `ml.overlap_test["Original (Kaggle) fraud"].pct_of_rule_misses_caught_by_ml` = 89.17 |
 | Recall 63% to 95%, PR-AUC 0.96 | `ml.comparison_test` rules recall 0.6343, hybrid recall 0.9477, LightGBM pr_auc 0.9562 |
-| 8 KRIs, 50 tests | `kris` (8 entries); `pytest` output |
+| 8 KRIs, 51 tests | `kris` (8 entries); `pytest` output |
 
 ## How to talk about it honestly
 

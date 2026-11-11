@@ -36,6 +36,25 @@ def test_kri_thresholds_are_ordered_consistently(cfg):
             assert k["red"] >= k["amber"], k["id"]
 
 
+def test_kri02_counts_open_critical_high_dq_issues_but_not_kri_breaches():
+    from pipeline.common import connect
+    from pipeline.issues import ensure_table
+    from pipeline.kri import open_critical_high_dq_issues
+
+    con = connect(None)
+    ensure_table(con)
+    for issue_id, source_type, severity, status in [
+        ("ISS-1", "DQ rule", "critical", "Open"),         # counted
+        ("ISS-2", "Reconciliation", "high", "Open"),      # counted
+        ("ISS-3", "DQ rule", "high", "Closed"),           # closed
+        ("ISS-4", "DQ rule", "medium", "Open"),           # not critical/high
+        ("ISS-5", "KRI breach", "high", "Open"),          # KRI-02's own breach must not count
+    ]:
+        con.execute("INSERT INTO governance.issue_log (issue_id, source_type, severity, status) VALUES (?, ?, ?, ?)",
+                    [issue_id, source_type, severity, status])
+    assert open_critical_high_dq_issues(con) == 2
+
+
 def test_pattern_to_regex_matches_the_profiled_shape():
     rx = pattern_to_regex("9999-99-99")
     assert re.fullmatch(rx, "2020-01-31")

@@ -1,7 +1,7 @@
 {
-  "run_id": "RUN-20261111-180313",
+  "run_id": "RUN-20261111-201416",
   "mode": "full",
-  "generated_at": "2026-11-11T18:05:17",
+  "generated_at": "2026-11-11T20:17:09",
   "batch_as_of": "2020-12-31 23:59:59",
   "report_month": "2020-12",
   "data": {
@@ -546,17 +546,17 @@
     }
   },
   "issues": {
-    "total": 25,
-    "open": 25,
+    "total": 26,
+    "open": 26,
     "open_by_severity": {
       "critical": 8,
-      "high": 12,
+      "high": 13,
       "low": 2,
       "medium": 3
     },
     "open_by_source": {
       "DQ rule": 24,
-      "KRI breach": 1
+      "KRI breach": 2
     }
   },
   "monitoring": {
@@ -908,7 +908,7 @@
     {
       "kri_id": "KRI-02",
       "name": "Open critical/high DQ issues",
-      "value": 20.0,
+      "value": 19.0,
       "unit": "count",
       "rag": "Red"
     },
@@ -938,7 +938,7 @@
       "name": "Alert false-positive rate",
       "value": 86.92,
       "unit": "%",
-      "rag": "Green"
+      "rag": "Red"
     },
     {
       "kri_id": "KRI-07",

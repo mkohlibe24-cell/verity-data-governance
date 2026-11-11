@@ -1,5 +1,5 @@
 {
-  "run_id": "RUN-20261111-180313",
+  "run_id": "RUN-20261111-201416",
   "summary": {
     "rows": 1855568,
     "source_rows": 1852394,
@@ -70,7 +70,7 @@
       "outlier_count": NaN,
       "min_length": 32.0,
       "max_length": 32.0,
-      "top_pattern": "9999999999999A99999A999AAA9A99A9",
+      "top_pattern": "999999999AA9AA99A9999AAA9999A99A",
       "top_pattern_share": 2e-06,
       "top_values": null,
       "suspected_pii": NaN

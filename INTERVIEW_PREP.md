@@ -21,7 +21,7 @@ each data product has a data contract, catalog entries and auto-generated lineag
 failure opens an issue with an owner and a due date, and eight KRIs with red/amber/green thresholds
 summarise it all in an Excel report. On top of the governed data I built eight SQL monitoring rules
 and a LightGBM model, and compared rules, ML and a hybrid. One command runs the whole thing, and
-CI runs 50 tests on every push."
+CI runs 51 tests on every push."
 
 **2. Why lead with governance rather than fraud detection?**
 "Because the role is about data products and data offices. A fraud model is only as good as the
@@ -159,9 +159,27 @@ only an interim fix."
 "A KPI measures performance; a KRI warns about risk. I have five data quality KRIs: CDE pass rate,
 open critical/high issues, reconciliation breaks, quarantine rate and contract compliance. I have
 three monitoring KRIs: alert false-positive rate, fraud detection rate and undetected fraud loss in
-basis points. I set the thresholds before looking at results. KRI-02 is Red because I injected
-defects on purpose, so 20 critical/high issues are open, and the issue log states which issues come
-from injected test defects."
+basis points. I set the thresholds before looking at results, and changed one after review
+(KRI-06, next question). KRI-02 is Red because I injected defects on purpose, so 19 critical/high
+DQ issues are open, and the issue log states which issues come from injected test defects. I also
+found that KRI-02 was counting its own breach issue, so I excluded KRI-breach issues from it."
+
+**22a. Your alert false-positive rate (KRI-06) was 86.92% and Green. Isn't that too lenient?**
+"Yes, and I changed it. KRI-06 covers every alert in the queue for the month: rules only, ML only
+and rules plus ML. In December 2020 that is 2,233 alerts. The 1,823 rules-only alerts are 99.56%
+false positives; alerts where the model fired are 30.73%. My first thresholds, amber 90% and red
+97%, were generic levels for rule-only monitoring. But this queue's own history is much better, so
+an 11-point jump from November (75.83%) to December (86.92%) stayed Green. A KRI that can't see
+that isn't doing its job.
+
+I recalibrated using only January 2019 to June 2020, the months before the reporting period, the
+same discipline as the model threshold. Amber is 82%, about the 90th percentile of monthly rates
+(82.08%). Red is 85%, above the worst month on record (83.02% in July 2019). December 2020 is now
+Red and opened an issue. The root cause is seasonal: December has 139,622 transactions against
+72,693 in November with fewer frauds, and the spend-based rules TM-01 and TM-06 doubled their
+alerts. December 2019 shows the same pattern. The fix I would propose is a seasonal baseline for
+those rules, not a looser KRI. Changing a threshold after seeing results needs a documented reason,
+so the rationale is written into the KRI definition."
 
 ## D. SQL
 
@@ -241,7 +259,7 @@ it was flagged, and a model validator can check the model uses sensible signals.
 "One command, `python pipeline/run_pipeline.py`, runs all 16 steps. Each step is timed and logged,
 and the run is written to an audit table with row counts per layer, rules passed and failed,
 reconciliation breaks and alerts. If a step fails, the run is still recorded as FAILED. Thresholds
-live in config, and GitHub Actions runs lint, 50 tests and an end-to-end sample run on every push."
+live in config, and GitHub Actions runs lint, 51 tests and an end-to-end sample run on every push."
 
 **35. How would you run this on Google Cloud?**
 "Land files in Cloud Storage, load into BigQuery as bronze/silver/gold datasets, and run the same
@@ -271,7 +289,8 @@ described but not enforced in the warehouse yet."
 **39. Why maker-checker?**
 "So no single person can both make and approve a sensitive change, which is segregation of duties.
 In Verity, rule suggestions need a steward's approval before they go live, and the web app enforces
-a second-person approval for closing high-priority alerts on the server, not just in the UI."
+a second-person approval for closing any alert on the server, not just in the UI. A self-approval
+returns HTTP 403 and is logged in the audit trail as a blocked attempt."
 
 ---
 

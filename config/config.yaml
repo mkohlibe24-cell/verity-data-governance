@@ -259,7 +259,7 @@ kris:
     amber: 3
     red: 6
     period: Latest pipeline run
-    formula: Count of issue-log items with severity critical or high and status Open
+    formula: Count of open issue-log items with severity critical or high raised by DQ rules, reconciliation or data contracts (KRI-breach issues are excluded so the KRI never counts its own breach)
     rationale: A small backlog is normal; six or more means remediation is not keeping up.
     escalation: Red - escalate to the Data Governance Council; owners present remediation dates.
     owner: Head of Data Governance
@@ -304,12 +304,16 @@ kris:
     category: Monitoring
     unit: "%"
     direction: lower_is_better
-    amber: 90
-    red: 97
+    amber: 82
+    red: 85
     period: Report month
-    formula: Alerts that were not fraud / all alerts (hybrid rules + ML)
-    rationale: Card monitoring typically runs at high false-positive rates; above 97% analysts drown in noise (alert fatigue).
-    escalation: Red - rule tuning review with the Fraud Monitoring Control Owner.
+    formula: Alerts in the month whose transaction was not fraud / all alerts in the queue that month (the hybrid queue - rules only, ML only, and rules + ML; tagged synthetic scenario alerts included)
+    rationale: >-
+      Recalibrated 11 Nov 2026. The first thresholds (amber 90, red 97) were generic levels for rule-only monitoring and
+      kept an 11-point jump in December 2020 Green. The new thresholds use only Jan 2019 - Jun 2020, before the reporting
+      period: amber 82 is about the 90th percentile of monthly rates (82.08%) and red 85 is above the worst month on record
+      (83.02%, Jul 2019). Beyond that, analysts spend most of their time clearing noise while genuine fraud waits in the queue.
+    escalation: Amber - the control owner reviews the drivers (for example seasonal volume) and confirms queue capacity. Red - rule tuning review with the Fraud Monitoring Control Owner.
     owner: Fraud Monitoring Control Owner
   - id: KRI-07
     name: Fraud detection rate

@@ -1,6 +1,14 @@
-# Root-cause analyses (5 Whys) for issues found in the ORIGINAL source data during discovery.
-# These are copied into the issue log when the related DQ rule fails.
+# Root-cause analyses (5 Whys) for issues found in the ORIGINAL source data during discovery, and for
+# KRI breaches. These are copied into the issue log when the related DQ rule fails or the KRI turns red.
 root_causes:
+  KRI-06:
+    root_cause: December is the holiday peak. Transaction volume almost doubles while fraud does not, and the spend-based rules (TM-01, TM-06, TM-08) fire in proportion to spend, so most extra alerts are legitimate purchases.
+    five_whys:
+      - "Why did the false-positive rate jump in December 2020? Alerts rose from 1,320 in November to 2,233 while fraud cases fell (335 to 305)."
+      - "Why did alerts rise? Rules-only alerts roughly doubled: TM-01 from 510 to 1,021 and TM-06 from 476 to 918, each over 99% false positive."
+      - "Why did those rules fire more? December volume is 139,622 transactions against 72,693 in November; TM-01 and TM-06 compare spend with the card's own 90-day history and TM-08 with a fixed category threshold, so holiday spend looks unusual."
+      - "Why is this not new? December 2019 shows the same pattern (81.78% against 75.94% in November 2019)."
+      - "Why was it not anticipated? The rules have no seasonal baseline, and the first KRI thresholds were too loose to flag the change."
   DQ-C09:
     root_cause: The source has no transactions at all on 29 February 2020, so the leap day is missing from the extract.
     five_whys:

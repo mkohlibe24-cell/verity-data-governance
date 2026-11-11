@@ -140,6 +140,13 @@ Eight KRIs (five data quality, three monitoring) with amber and red thresholds s
 results were seen, plus owners and escalation actions (`config.yaml -> kris`, `reports/kri_report.md`).
 A Red KRI opens an issue.
 
+**Threshold review.** Thresholds are reviewed when they fail to flag a material change. On 11 Nov 2026,
+KRI-06 (alert false-positive rate) was recalibrated from amber 90% / red 97% (generic rule-only
+levels) to amber 82% / red 85%, using only Jan 2019 - Jun 2020, before the reporting period: amber is
+about the 90th percentile of monthly rates and red is above the worst month on record. The old
+thresholds kept an 11-point December 2020 jump Green. The reason is recorded in the KRI definition.
+KRI-02 now excludes KRI-breach issues, so it never counts its own breach.
+
 ## 12. Change management and evidence
 
 All rules, thresholds, contracts, curated metadata and steward decisions are configuration files
