@@ -239,6 +239,11 @@ class Generator:
                 i += 1
                 if defect != "duplicate_record":
                     r["trans_num"] = self.trans_num()
+                if defect not in ("duplicate_record", "double_posting"):
+                    # Shift the copy a few minutes so it is a NEW transaction with one defect, not also a
+                    # double posting of the record it was copied from (that is its own defect type)
+                    ts = dt.datetime.strptime(r["trans_date_trans_time"], TS_FMT)
+                    r["trans_date_trans_time"] = (ts + dt.timedelta(minutes=int(self.rng.integers(3, 58)))).strftime(TS_FMT)
                 self.mutate(r, defect)
                 r["synthetic_tag"] = f"dq:{defect}"
                 r["_source"] = "generator_dq_defects"

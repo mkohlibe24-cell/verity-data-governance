@@ -148,6 +148,12 @@ def discovery_findings(con) -> list[dict]:
         "FROM bronze.transactions_typed WHERE NOT is_synthetic)").fetchall()[0][0]
     add("Longest gap between a card's transactions (days)", gap,
         f"No card is silent for more than {gap} days, so the source has no dormant accounts (generator adds them).")
+    missing = [str(r[0])[:10] for r in con.execute(
+        "SELECT d FROM (SELECT unnest(generate_series(DATE '2019-01-01', DATE '2020-12-31', INTERVAL 1 DAY)) AS d) "
+        "WHERE CAST(d AS DATE) NOT IN (SELECT DISTINCT CAST(txn_ts AS DATE) FROM bronze.transactions_typed "
+        "WHERE NOT is_synthetic AND txn_ts IS NOT NULL) ORDER BY 1").fetchall()]
+    add("Calendar days with no transactions", len(missing),
+        f"{len(missing)} day(s) in 2019-2020 have no source records: {', '.join(missing) or 'none'}.")
     dist = con.execute(
         "SELECT max(haversine_km(home_lat, home_long, merch_lat, merch_long)) FROM bronze.transactions_typed WHERE NOT is_synthetic"
     ).fetchall()[0][0]

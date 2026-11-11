@@ -203,6 +203,8 @@ def rule_meta_frame(rules: list[dict]) -> pd.DataFrame:
     return pd.DataFrame([{
         "rule_id": r["id"], "table_name": r["table"], "action": r["action"],
         "reason_code": r.get("reason_code", r["id"]), "flag_in_silver": bool(r.get("flag_in_silver", True)),
+        # sort key so the primary reason is the most severe failed rule (ties broken by rule id)
+        "severity_key": f"{5 - SEVERITY_ORDER.get(r['severity'], 0)}-{r['id']}",
     } for r in rules])
 
 
@@ -215,12 +217,13 @@ def build_silver(con, rules: list[dict], run_id: str, quarantined_at: str) -> No
         WITH q AS (
             SELECT CAST(f.record_id AS BIGINT) AS bronze_row_id,
                    list_sort(list_distinct(list(f.rule_id)))     AS failed_rules,
-                   list_sort(list_distinct(list(m.reason_code))) AS reason_codes
+                   list_sort(list_distinct(list(m.reason_code))) AS reason_codes,
+                   min_by(m.reason_code, m.severity_key)         AS primary_reason
             FROM governance.dq_failures f JOIN rule_meta m USING (rule_id)
             WHERE f.run_id = '{run_id}' AND m.action = 'quarantine' AND m.table_name = 'transactions'
             GROUP BY 1
         )
-        SELECT q.bronze_row_id, q.failed_rules, q.reason_codes, q.reason_codes[1] AS primary_reason,
+        SELECT q.bronze_row_id, q.failed_rules, q.reason_codes, q.primary_reason,
                b._source, b.is_synthetic, b.synthetic_tag,
                TRY_CAST(NULLIF(trim(b.amt), '') AS DECIMAL(18, 2)) AS amount,
                '{run_id}' AS run_id, TIMESTAMP '{quarantined_at}' AS quarantined_at,

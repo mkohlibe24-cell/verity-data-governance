@@ -98,7 +98,7 @@ columns:
   # ---- quarantine
   silver.dq_quarantine.failed_rules: {description: "IDs of all quarantine rules the record failed."}
   silver.dq_quarantine.reason_codes: {description: "Reason codes for the quarantine, e.g. NULL_AMOUNT, DUPLICATE_TRANS_ID."}
-  silver.dq_quarantine.primary_reason: {description: "First reason code (alphabetical), for summaries."}
+  silver.dq_quarantine.primary_reason: {description: "Reason code of the most severe rule the record failed, for summaries."}
   silver.dq_quarantine.run_id: {description: "Pipeline run that quarantined the record."}
   silver.dq_quarantine.quarantined_at: {description: "When the record was quarantined."}
   silver.dq_quarantine.raw_record: {description: "Full raw bronze record as JSON, kept as evidence for investigation and re-processing.", sensitivity: Restricted, pii: "Contains raw PII"}

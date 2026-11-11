@@ -40,6 +40,15 @@ def md_table(df: pd.DataFrame, cols: list[str] | None = None, max_rows: int | No
         d = d.head(max_rows)
 
     def cell(v):
+        if not isinstance(v, list | tuple | dict | np.ndarray):
+            try:
+                if pd.isna(v):
+                    return ""
+            except (TypeError, ValueError):
+                pass
+        if isinstance(v, pd.Timestamp | dt.date):
+            ts = pd.Timestamp(v)
+            return ts.strftime("%Y-%m-%d") if ts == ts.normalize() else ts.strftime("%Y-%m-%d %H:%M:%S")
         if isinstance(v, float):
             return f"{v:,.4f}".rstrip("0").rstrip(".") if abs(v) < 1e15 else str(v)
         if isinstance(v, int) and not isinstance(v, bool):
@@ -127,7 +136,7 @@ def collect_results(ctx: RunContext) -> dict:
     open_issues = issues[issues.status == "Open"]
     quarantine = con.execute(
         "SELECT primary_reason, count(*) AS n, count(*) FILTER (WHERE is_synthetic) AS synthetic "
-        "FROM silver.dq_quarantine GROUP BY 1 ORDER BY n DESC").df()
+        "FROM silver.dq_quarantine GROUP BY 1 ORDER BY n DESC, 1").df()
     return {
         "run_id": run_id, "mode": ctx.mode, "generated_at": dt.datetime.now().isoformat(timespec="seconds"),
         "batch_as_of": ctx.cfg["project"]["batch_as_of"], "report_month": ctx.cfg["project"]["report_month"],

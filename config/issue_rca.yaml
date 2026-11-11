@@ -1,6 +1,14 @@
 # Root-cause analyses (5 Whys) for issues found in the ORIGINAL source data during discovery.
 # These are copied into the issue log when the related DQ rule fails.
 root_causes:
+  DQ-C09:
+    root_cause: The source has no transactions at all on 29 February 2020, so the leap day is missing from the extract.
+    five_whys:
+      - "Why did the daily-volume rule fail? One day in the period has 0 records: 2020-02-29."
+      - "Why is only that day empty? Every other day has thousands of records, so it is not a quiet day but a gap."
+      - "Why would a single date be missing? 2020 is a leap year and 29 February is the only date that exists in it but not in 2019."
+      - "Why was the leap day skipped? The generating/extract process most likely builds its calendar without leap-day handling."
+      - "Why was it not caught upstream? There was no completeness check on daily volume before this pipeline."
   DQ-V06:
     root_cause: ZIP code is typed as a number in the source extract, so leading zeros are stripped.
     five_whys:

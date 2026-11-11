@@ -128,8 +128,12 @@ def upsert(ctx: RunContext, findings: list[dict], source_types: list[str]) -> No
     next_n = 1 + max([int(i.split("-")[1]) for i in existing["issue_id"]] or [0])
     for f in sorted(findings, key=lambda x: (SEVERITY_RANK.get(x["severity"], 9), x["source_ref"])):
         if f["source_ref"] in open_refs:
-            con.execute("UPDATE governance.issue_log SET last_seen_run = ?, records_affected = ?, description = ? "
-                        "WHERE issue_id = ?", [run_id, f["records_affected"], f["description"], open_refs[f["source_ref"]]])
+            # Refresh the facts and analysis, but keep the issue ID, opened date and due date
+            con.execute("UPDATE governance.issue_log SET last_seen_run = ?, records_affected = ?, description = ?, "
+                        "title = ?, root_cause = ?, five_whys = ?, remediation_plan = ?, synthetic_share_pct = ? "
+                        "WHERE issue_id = ?",
+                        [run_id, f["records_affected"], f["description"], f["title"], f["root_cause"], f["five_whys"],
+                         f["remediation_plan"], f["synthetic_share_pct"], open_refs[f["source_ref"]]])
             continue
         issue_id = f"ISS-{next_n:04d}"
         next_n += 1
