@@ -28,7 +28,7 @@ Kaggle CSVs (CC0) + generator rows (tagged)
 | Tier | Scope | Target |
 |---|---|---|
 | 1 | Ingestion + profiling, DQ engine (20+ rules) + quarantine + scorecard + rule suggestions, gold + masking, reconciliation, catalog, contracts, lineage, control inventory, issue log, run audit log, 8 TM rules, Isolation Forest + LightGBM, 8 KRIs, Excel report, tests, CI, docs | Done 11 Nov (run RUN-20261111-180313) |
-| 2 | FastAPI + React app: Overview, Data Governance, Issues, Monitoring (maker-checker), Reports | 10 PM, 11 Nov |
+| 2 | FastAPI + React app: Overview, Data Governance, Issues, Monitoring (maker-checker), Reports | Done 11 Nov |
 | 3 | BigQuery sandbox, Power BI kit, PowerPoint, control testing workpapers + RCM, model card, Playwright E2E, Vercel + Render | after applying |
 
 ## Decisions and defaults

@@ -32,7 +32,7 @@ export default function Issues() {
   const columns: ColumnDef<Issue, any>[] = [
     { accessorKey: "issue_id", header: "Issue", cell: (c) => <span className="font-medium whitespace-nowrap">{c.getValue()}</span> },
     { accessorKey: "severity", header: "Severity", cell: (c) => <SeverityBadge s={c.getValue()} />, sortingFn: (a, b) => SEV.indexOf(a.original.severity) - SEV.indexOf(b.original.severity) },
-    { accessorKey: "title", header: "Title", cell: (c) => <span className="block max-w-[360px]">{c.getValue()}</span> },
+    { accessorKey: "title", header: "Title", cell: (c) => <span className="block max-w-[360px] min-w-[240px]">{c.getValue()}</span> },
     { accessorKey: "source_type", header: "Raised by", cell: (c) => <span className="text-xs whitespace-nowrap">{c.getValue()} <span className="text-muted">{c.row.original.source_ref.split(":")[1]}</span></span> },
     { accessorKey: "records_affected", header: "Records", cell: (c) => <span className="num">{fmtInt(c.getValue())}</span> },
     { accessorKey: "synthetic_share_pct", header: "Origin", cell: (c) => {
@@ -40,7 +40,7 @@ export default function Issues() {
       if (c.row.original.source_type !== "DQ rule") return <span className="text-xs text-muted">–</span>;
       return v === 100 ? <Badge>Injected defects</Badge> : <Badge tone="amber">Source data</Badge>;
     } },
-    { accessorKey: "owner", header: "Owner", cell: (c) => <span className="text-xs">{c.getValue()}</span> },
+    { accessorKey: "owner", header: "Owner", cell: (c) => <span className="block min-w-[140px] text-xs">{c.getValue()}</span> },
     { accessorKey: "due_date", header: "Due", cell: (c) => <span className="num whitespace-nowrap">{c.getValue()}</span> },
     { accessorKey: "status", header: "Status", cell: (c) => <Badge tone={c.getValue() === "Open" ? "neutral" : "green"}>{c.getValue()}</Badge> },
   ];

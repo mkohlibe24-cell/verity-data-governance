@@ -10,12 +10,15 @@ const pages = [
   ["overview", "/"],
   ["governance-scorecard", "/governance?tab=scorecard"],
   ["governance-catalog", "/governance?tab=catalog"],
+  ["governance-cde", "/governance?tab=cde"],
+  ["governance-reconciliation", "/governance?tab=reconciliation"],
   ["governance-lineage", "/governance?tab=lineage"],
   ["governance-suggestions", "/governance?tab=suggestions"],
   ["issues", "/issues"],
   ["monitoring", "/monitoring"],
   ["monitoring-alert", "/monitoring?alert=ALT-0001196"],
   ["monitoring-rules", "/monitoring?tab=rules"],
+  ["monitoring-audit", "/monitoring?tab=audit"],
   ["reports", "/reports"],
 ].filter(([n]) => only.length === 0 || only.includes(n));
 
@@ -39,6 +42,15 @@ for (const theme of ["light", "dark"]) {
       await page.screenshot({ path: file, fullPage: false });
       console.log(file, errors.length ? `ERRORS: ${errors.join(" | ")}` : "");
       errors.length = 0;
+    }
+    if (only.length === 0 || only.includes("command-palette")) {
+      await page.goto(base + "/", { waitUntil: "networkidle" });
+      await page.keyboard.press("Control+k");
+      await page.keyboard.type("alt-1196");
+      await page.waitForTimeout(400);
+      const file = `${out}/command-palette-${width}-${theme}.png`;
+      await page.screenshot({ path: file });
+      console.log(file);
     }
     await ctx.close();
   }

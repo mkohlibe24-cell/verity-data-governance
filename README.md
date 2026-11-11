@@ -7,7 +7,11 @@ products. Along the way it runs automated data discovery, a config-driven data q
 with quarantine, reconciliation controls, a data catalog, data contracts, auto-generated lineage,
 an issue log and Key Risk Indicators. On top of the governed data it builds a transaction
 monitoring data product (8 SQL rules plus an ML risk score) and reports everything in a management
-Excel workbook. One command runs it end to end.
+Excel workbook. One command runs it end to end. A FastAPI + React web app puts the governance
+results, the data steward's approval queue and the alert queue (with maker-checker enforced by the
+API) in front of business users.
+
+![Overview: KRIs with red/amber/green status](docs/screenshots/overview-1440-light.png)
 
 ## The business problem
 
@@ -31,7 +35,8 @@ that a data product built on governed data (fraud monitoring) can be trusted and
 | Controls and issues | Control inventory (64 controls); issue log opened automatically from failures, with owners, SLAs and 5-Whys root causes | `docs/control_inventory.md`, `reports/issue_log.md` |
 | Monitoring data product | 8 SQL detective rules (window functions, CTEs), LightGBM + Isolation Forest with a time-based split, a cost-based threshold and per-alert SHAP reasons | `sql/monitoring/`, `pipeline/ml.py` |
 | KRIs and reporting | 8 KRIs with red/amber/green thresholds; Excel "Data Quality & Governance Report" | `reports/Verity_DQ_Governance_Report.xlsx` |
-| Engineering | One-command pipeline with run audit log, 42 pytest tests, GitHub Actions CI | `pipeline/run_pipeline.py`, `tests/` |
+| Web app | FastAPI API (roles enforced server-side, maker-checker, audit trail) and a React app: Overview, Data Governance, Issues, Monitoring, Reports | `api/`, `web/` |
+| Engineering | One-command pipeline with run audit log, 50 pytest tests, GitHub Actions CI (lint, tests, sample run, web build) | `pipeline/run_pipeline.py`, `tests/` |
 
 ## Architecture
 
@@ -98,6 +103,52 @@ flowchart LR
 real fraud, so model scores are higher than a real portfolio would show. Generator rows are always
 tagged, and the headline ML comparison is also reported on original fraud only.
 
+## Web app
+
+FastAPI reads the warehouse read-only and serves a React + TypeScript app. Every number on screen
+comes from the latest full run; nothing is hard-coded.
+
+| Page | What it shows |
+|---|---|
+| Overview | 8 KRIs with RAG status, thresholds and trends; breach banner linked to the issue log; alerts by month and priority; rules vs ML vs hybrid on the test period |
+| Data Governance | DQ scorecard, catalog search, Critical Data Elements, interactive lineage (click a dataset to see everything upstream and downstream), reconciliation, rule suggestions with steward Approve/Reject |
+| Issues | Issue log with severity, origin (genuine source data vs injected test defects), owner and due date; 5-Whys root cause in a side panel |
+| Monitoring | Alert queue (32,334 alerts, server-side paging and filters), alert detail with masked transaction, rule and model reasons and recent card activity; case decisions under maker-checker; append-only audit trail; rule and model performance |
+| Reports | Excel report download, generated reports, pipeline run audit log, source file manifest with SHA-256 |
+
+**Controls enforced by the API, not the browser.** Users are made-up demo identities picked with the
+role switcher (a real deployment would use SSO). The server looks up each user's roles:
+
+| Demo user | Role | Can |
+|---|---|---|
+| Aarav Mehta | Monitoring Analyst | Propose an alert disposition (maker) |
+| Riya Sharma | Monitoring Reviewer | Approve or return a proposal (checker) |
+| Neha Kapoor | Team Lead (analyst + reviewer) | Both, but never check her own proposal |
+| Kabir Singh | Data Steward | Approve or reject suggested DQ rules |
+| Ira Banerjee | Internal Audit | Read only |
+
+A self-approval returns HTTP 403 and is itself written to the audit trail as a blocked attempt. Every
+decision needs a note. Alert case history is kept in `warehouse/casework.sqlite`, separate from the
+warehouse, so re-running the pipeline never loses it. Steward decisions go to
+`config/steward_decisions.yaml` through the same function the command line uses. The case actions
+visible in the screenshots (two proposals, one approval, one blocked self-approval) were made through
+the API as a demo.
+
+| | |
+|---|---|
+| ![Data Governance: interactive lineage](docs/screenshots/governance-lineage-1440-light.png) | ![Rule suggestions waiting for the data steward](docs/screenshots/governance-suggestions-1440-dark.png) |
+| ![Alert detail with maker-checker panel](docs/screenshots/monitoring-alert-1440-light.png) | ![Audit trail with a blocked self-approval](docs/screenshots/monitoring-audit-1440-dark.png) |
+| ![Issue log](docs/screenshots/issues-1440-light.png) | ![DQ scorecard in dark mode](docs/screenshots/governance-scorecard-1440-dark.png) |
+
+All pages at 1440px and 1024px in light and dark mode are in [`docs/screenshots/`](docs/screenshots),
+captured by `web/scripts/screenshots.mjs` (Playwright).
+
+**Design rules followed:** navy/slate palette with one blue accent, red/amber/green used only for
+status, WCAG AA contrast, IBM Plex Sans with tabular numerals, an 8px spacing grid, Lucide icons,
+no emojis, ECharts with muted gridlines, 150-250 ms motion that is switched off under
+`prefers-reduced-motion`, loading, empty and error states on every view, a collapsible sidebar, and
+a Ctrl+K command palette (pages, sections, alert IDs, theme, user switch).
+
 ## Data
 
 - **Source:** [Credit Card Transactions Fraud Detection Dataset](https://www.kaggle.com/datasets/kartik2112/fraud-detection)
@@ -130,9 +181,27 @@ python pipeline/run_pipeline.py --sample
 #   data/raw/kaggle_fraud.zip
 python pipeline/run_pipeline.py
 
-pytest                      # 42 unit tests
-ruff check pipeline tests   # lint
+pytest                          # 50 tests
+ruff check pipeline tests api   # lint
 ```
+
+Web app (after a full run). Requires Node 20+.
+
+```bash
+# Terminal 1 - API on http://localhost:8000
+uvicorn api.main:app --port 8000
+
+# Terminal 2 - web app on http://localhost:5173 (calls the API through a proxy)
+cd web
+npm ci
+npm run dev
+
+# Or one server: build the app once, then the API serves it at http://localhost:8000
+npm run build
+```
+
+The API reads `warehouse/verity.duckdb`, which the full run creates. After a sample-only run, copy
+`warehouse/verity_sample.duckdb` to `warehouse/verity.duckdb` to browse the sample.
 
 Steward workflow for suggested rules:
 
@@ -167,7 +236,9 @@ config/          config.yaml (all thresholds), dq_rules.yaml, catalog_curated.ya
                  contracts/, issue_rca.yaml, steward_decisions.yaml
 pipeline/        one module per step; run_pipeline.py runs all 16 steps
 sql/monitoring/  8 monitoring rules as .sql files
-tests/           42 pytest tests on small hand-made datasets
+api/             FastAPI app (main.py) and maker-checker case logic (casework.py)
+web/             React + Vite + TypeScript app; scripts/screenshots.mjs (Playwright)
+tests/           50 pytest tests: hand-made datasets, maker-checker rules, API security
 data/sample/     CC0 sample for fresh clones and CI
 reports/, docs/  generated outputs
 ```
@@ -184,19 +255,21 @@ reports/, docs/  generated outputs
 | Automating manual processes using emerging technologies | One-command pipeline, run audit log, CI, automated rule suggestions with steward approval |
 | SQL querying, validation and analysis | DQ rules compile to SQL; monitoring rules are SQL with window functions and CTEs |
 | Data governance, quality and control principles | Three Lines of Defense, preventive vs detective controls, BCBS 239 mapping |
-| Preferred: Google Cloud, visualisation and reporting tools | Planned: BigQuery sandbox for DQ and reconciliation; Power BI kit; web app (see roadmap) |
+| Preferred: Google Cloud, visualisation and reporting tools | Web app dashboards and Excel report; planned: BigQuery sandbox for DQ and reconciliation, Power BI kit |
+| Maintaining a robust control environment | Maker-checker on alert decisions enforced by the API, append-only audit trail, steward approval for new rules |
 
 ## Roadmap
 
-- **Next:** FastAPI + React web app (governance dashboard, data catalog search, lineage graph,
-  steward approvals, issue log, alert queue with maker-checker enforced by the API).
-- **Then:** DQ and reconciliation on a BigQuery sandbox, Power BI build kit, monthly PowerPoint
+- **Done:** FastAPI + React web app (see above).
+- **Next:** DQ and reconciliation on a BigQuery sandbox, Power BI build kit, monthly PowerPoint
   report, control-testing workpapers and full RCM, model card, Playwright end-to-end tests,
-  deployment.
+  deployment (Vercel + Render).
 
 ## Limitations
 
 - Simulated source data plus synthetic (tagged) scenarios: the results show what the controls can do,
   not real-world fraud or defect rates.
 - The demo hashing salt is public; production would use a secrets manager.
-- Roles and access are documented but not enforced in the single-file DuckDB warehouse.
+- The web app enforces roles server-side, but identity is a demo header with made-up users, not
+  real authentication (production would use SSO). The DuckDB warehouse itself has no row-level
+  access control.

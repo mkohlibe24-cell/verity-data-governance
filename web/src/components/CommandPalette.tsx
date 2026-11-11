@@ -63,7 +63,7 @@ export function CommandPalette({ open, setOpen }: { open: boolean; setOpen: (o: 
                 value={search}
                 onValueChange={setSearch}
                 placeholder="Type a page, an alert ID (ALT-0001196) or an action"
-                className="h-12 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-muted"
+                className="h-12 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-muted focus-visible:outline-none"
               />
             </div>
             <Command.List className="max-h-[360px] overflow-y-auto p-2">

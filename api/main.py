@@ -236,7 +236,9 @@ class Decision(BaseModel):
 @app.post("/api/governance/suggestions/{suggestion_id}/decision")
 def decide_suggestion(suggestion_id: str, body: Decision, user: User = Depends(current_user)) -> dict:
     if "steward" not in user.roles:
-        raise HTTPException(403, f"{user.name} is not a data steward; only stewards approve or reject rules")
+        msg = f"{user.name} is not a data steward; only stewards approve or reject rules"
+        log_blocked(user, "rule_suggestion", suggestion_id, body.decision, msg)
+        raise HTTPException(403, msg)
     if body.decision not in ("approved", "rejected"):
         raise HTTPException(400, "decision must be 'approved' or 'rejected'")
     try:
@@ -360,10 +362,18 @@ class Check(BaseModel):
     note: str
 
 
-def run_case(fn, *args) -> dict:
+def log_blocked(user: User, entity_type: str, entity_id: str, attempted: str, reason: str) -> None:
+    """Refused actions are evidence too: access and segregation-of-duties violations are logged."""
+    with cases:
+        casework.log_event(cases, user, entity_type, entity_id, f"Blocked: {attempted}", None, None, {"note": reason})
+
+
+def run_case(fn, alert_id: str, user: User, *args) -> dict:
     try:
-        return fn(cases, *args)
+        return fn(cases, alert_id, user, *args)
     except casework.CaseError as e:
+        if e.status_code == 403:
+            log_blocked(user, "alert", alert_id, fn.__name__.replace("_case", ""), str(e))
         raise HTTPException(e.status_code, str(e)) from e
 
 
@@ -450,7 +460,14 @@ DIST = ROOT / "web" / "dist"
 if DIST.exists():
     app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
 
+    DIST_ROOT = DIST.resolve()
+
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa(full_path: str) -> FileResponse:
-        target = DIST / full_path
-        return FileResponse(target if full_path and target.is_file() else DIST / "index.html")
+        if full_path.startswith("api/"):
+            raise HTTPException(404, "Not found")
+        target = (DIST_ROOT / full_path).resolve()
+        # Only files inside web/dist may be served (blocks ../ path traversal); anything else is the app.
+        if full_path and target.is_file() and target.is_relative_to(DIST_ROOT):
+            return FileResponse(target)
+        return FileResponse(DIST_ROOT / "index.html")

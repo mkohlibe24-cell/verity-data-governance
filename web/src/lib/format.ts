@@ -33,7 +33,7 @@ export function fmtBytes(b: number): string {
 
 export function fmtValue(v: number | null | undefined, unit: string): string {
   if (v == null) return "–";
-  if (unit === "%") return fmtPct(v, v >= 99 || v < 1 ? 4 : 2);
+  if (unit === "%") return v === 100 ? "100%" : fmtPct(v, v >= 99 || v < 1 ? 4 : 2);
   if (unit === "bps") return `${fmtNum(v, 2)} bps`;
   if (unit === "count") return fmtInt(v);
   return `${fmtNum(v, 2)} ${unit}`;

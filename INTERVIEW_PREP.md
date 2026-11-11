@@ -21,7 +21,7 @@ each data product has a data contract, catalog entries and auto-generated lineag
 failure opens an issue with an owner and a due date, and eight KRIs with red/amber/green thresholds
 summarise it all in an Excel report. On top of the governed data I built eight SQL monitoring rules
 and a LightGBM model, and compared rules, ML and a hybrid. One command runs the whole thing, and
-CI runs 42 tests on every push."
+CI runs 50 tests on every push."
 
 **2. Why lead with governance rather than fraud detection?**
 "Because the role is about data products and data offices. A fraud model is only as good as the
@@ -241,7 +241,7 @@ it was flagged, and a model validator can check the model uses sensible signals.
 "One command, `python pipeline/run_pipeline.py`, runs all 16 steps. Each step is timed and logged,
 and the run is written to an audit table with row counts per layer, rules passed and failed,
 reconciliation breaks and alerts. If a step fails, the run is still recorded as FAILED. Thresholds
-live in config, and GitHub Actions runs lint, 42 tests and an end-to-end sample run on every push."
+live in config, and GitHub Actions runs lint, 50 tests and an end-to-end sample run on every push."
 
 **35. How would you run this on Google Cloud?**
 "Land files in Cloud Storage, load into BigQuery as bronze/silver/gold datasets, and run the same
