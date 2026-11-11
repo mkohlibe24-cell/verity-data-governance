@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pipeline:
+    name: Lint, test and run the pipeline on the sample
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check pipeline tests
+
+      - name: Unit tests (pytest)
+        run: pytest
+
+      - name: End-to-end pipeline on the committed CC0 sample
+        run: python pipeline/run_pipeline.py --sample
+
+      - name: Upload sample-run results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sample-run
+          path: |
+            reports/results_sample.json
+            logs/

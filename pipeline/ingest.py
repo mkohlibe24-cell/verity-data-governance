@@ -59,6 +59,45 @@ def file_manifest(path: Path, source: str, amount_col: str = "amt") -> dict:
     }
 
 
+def create_typed_view(con) -> None:
+    """Typed view over bronze. TRY_CAST never fails, it returns NULL, so DQ rules can see
+    exactly which raw values could not be parsed."""
+    con.execute(
+        """
+        CREATE OR REPLACE VIEW bronze.transactions_typed AS
+        SELECT
+            bronze_row_id, _source, _source_row_num, is_synthetic, synthetic_tag, _run_id, _ingested_at,
+            NULLIF(trim(trans_num), '')                                   AS trans_num,
+            NULLIF(trim(cc_num), '')                                      AS cc_num,
+            NULLIF(trim(merchant), '')                                    AS merchant,
+            NULLIF(trim(category), '')                                    AS category,
+            NULLIF(trim(trans_date_trans_time), '')                       AS txn_ts_raw,
+            TRY_STRPTIME(NULLIF(trim(trans_date_trans_time), ''), '%Y-%m-%d %H:%M:%S') AS txn_ts,
+            NULLIF(trim(amt), '')                                         AS amt_raw,
+            TRY_CAST(NULLIF(trim(amt), '') AS DECIMAL(18, 2))             AS amount,
+            NULLIF(trim("first"), '')                                     AS first_name,
+            NULLIF(trim("last"), '')                                      AS last_name,
+            NULLIF(trim(gender), '')                                      AS gender,
+            NULLIF(trim(street), '')                                      AS street,
+            NULLIF(trim(city), '')                                        AS city,
+            NULLIF(trim(state), '')                                       AS state,
+            NULLIF(trim(zip), '')                                         AS zip,
+            TRY_CAST(lat AS DOUBLE)                                       AS home_lat,
+            TRY_CAST("long" AS DOUBLE)                                    AS home_long,
+            TRY_CAST(city_pop AS BIGINT)                                  AS city_pop,
+            NULLIF(trim(job), '')                                         AS job,
+            NULLIF(trim(dob), '')                                         AS dob_raw,
+            TRY_CAST(NULLIF(trim(dob), '') AS DATE)                       AS dob,
+            TRY_CAST(unix_time AS BIGINT)                                 AS unix_time,
+            TRY_CAST(merch_lat AS DOUBLE)                                 AS merch_lat,
+            TRY_CAST(merch_long AS DOUBLE)                                AS merch_long,
+            NULLIF(trim(is_fraud), '')                                    AS is_fraud_raw,
+            TRY_CAST(NULLIF(trim(is_fraud), '') AS INTEGER)               AS is_fraud
+        FROM bronze.transactions_raw
+        """
+    )
+
+
 def run(ctx: RunContext) -> None:
     cfg, con = ctx.cfg, ctx.con
     loaded_at = ctx.started_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -136,42 +175,8 @@ def run(ctx: RunContext) -> None:
             [ctx.run_id, m["source"], m["file"], m["sha256"], m["file_bytes"], m["records"], m["amount_total"]],
         )
 
-    # 4) Typed view over bronze: TRY_CAST never fails, it returns NULL, so DQ rules can see
-    #    exactly which raw values could not be parsed.
-    con.execute(
-        """
-        CREATE OR REPLACE VIEW bronze.transactions_typed AS
-        SELECT
-            bronze_row_id, _source, _source_row_num, is_synthetic, synthetic_tag, _run_id, _ingested_at,
-            NULLIF(trim(trans_num), '')                                   AS trans_num,
-            NULLIF(trim(cc_num), '')                                      AS cc_num,
-            NULLIF(trim(merchant), '')                                    AS merchant,
-            NULLIF(trim(category), '')                                    AS category,
-            NULLIF(trim(trans_date_trans_time), '')                       AS txn_ts_raw,
-            TRY_STRPTIME(NULLIF(trim(trans_date_trans_time), ''), '%Y-%m-%d %H:%M:%S') AS txn_ts,
-            NULLIF(trim(amt), '')                                         AS amt_raw,
-            TRY_CAST(NULLIF(trim(amt), '') AS DECIMAL(18, 2))             AS amount,
-            NULLIF(trim("first"), '')                                     AS first_name,
-            NULLIF(trim("last"), '')                                      AS last_name,
-            NULLIF(trim(gender), '')                                      AS gender,
-            NULLIF(trim(street), '')                                      AS street,
-            NULLIF(trim(city), '')                                        AS city,
-            NULLIF(trim(state), '')                                       AS state,
-            NULLIF(trim(zip), '')                                         AS zip,
-            TRY_CAST(lat AS DOUBLE)                                       AS home_lat,
-            TRY_CAST("long" AS DOUBLE)                                    AS home_long,
-            TRY_CAST(city_pop AS BIGINT)                                  AS city_pop,
-            NULLIF(trim(job), '')                                         AS job,
-            NULLIF(trim(dob), '')                                         AS dob_raw,
-            TRY_CAST(NULLIF(trim(dob), '') AS DATE)                       AS dob,
-            TRY_CAST(unix_time AS BIGINT)                                 AS unix_time,
-            TRY_CAST(merch_lat AS DOUBLE)                                 AS merch_lat,
-            TRY_CAST(merch_long AS DOUBLE)                                AS merch_long,
-            NULLIF(trim(is_fraud), '')                                    AS is_fraud_raw,
-            TRY_CAST(NULLIF(trim(is_fraud), '') AS INTEGER)               AS is_fraud
-        FROM bronze.transactions_raw
-        """
-    )
+    # 4) Typed view over bronze (see create_typed_view)
+    create_typed_view(con)
     ctx.add_lineage("bronze.transactions_raw", "bronze.transactions_typed", "ingest", "TRY_CAST to types (view)")
     ctx.metrics["bronze_rows"] = int(total)
     ctx.metrics["kaggle_rows"] = int(kaggle_rows)
