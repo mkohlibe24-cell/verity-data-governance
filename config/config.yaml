@@ -213,6 +213,7 @@ ml:
   validation_end: "2020-07-01"   # validation: train_end <= txn_ts < validation_end (threshold choice)
   # test:       txn_ts >= validation_end (Jul-Dec 2020, never used for any choice)
   cost_false_positive: 15        # USD: analyst time to review one alert
+  analyst_capacity_alerts_per_day: 40   # ML queue capacity (e.g. 2 analysts x 20 reviews a day)
   # cost of a missed fraud = the transaction amount (the loss)
   lightgbm:
     n_estimators: 400
@@ -224,6 +225,8 @@ ml:
     colsample_bytree: 0.8
     scale_pos_weight: 5
     random_state: 42
+    deterministic: true        # same data + seed -> same model, every run
+    force_row_wise: true
   isolation_forest:
     n_estimators: 200
     max_samples: 256
