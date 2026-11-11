@@ -55,7 +55,7 @@ flowchart LR
     KRI --> XL["Excel governance report"]
 ```
 
-## Key results (full run `RUN-20261111-164200`, all numbers from `reports/results.json`)
+## Key results (full run `RUN-20261111-180313`, all numbers from `reports/results.json`)
 
 **Data quality and governance**
 
@@ -69,7 +69,7 @@ flowchart LR
 | CDE data quality pass rate | 99.97% |
 | Reconciliation | 8 of 8 controls tie out (counts and amounts to the cent, source to gold) |
 | PII | 12 columns flagged by the profiler; none in raw form in gold |
-| Rule suggestions from profiling | 21 proposed, pending steward review |
+| Rule suggestions from profiling | 21 proposed: 1 rejected by the data steward (range learned from corrupted records), 20 pending review |
 | Catalog / contracts / controls | 127 columns (98.4% curated, 27 CDEs); 4 contracts, 32 of 32 clauses passed; 64 controls |
 | Issue log | 25 open issues: 24 from DQ rules (18 caused only by injected test defects, 6 by genuine source-data issues with 5-Whys root causes) and 1 from a KRI breach |
 

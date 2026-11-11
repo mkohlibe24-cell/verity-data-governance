@@ -138,7 +138,7 @@ evidence and an impact preview of how many current records it would fail, and a 
 or rejects it with a reason. The decision is stored with who, when and why, under version control."
 
 **19. Give an example of a suggestion you would reject.**
-"The profiler suggested a range rule for merchant latitude, but the range it learned went up to
+"I rejected one myself, as the steward: SUG-8DAE34, a range rule for merchant latitude. The range it learned went up to
 179.9. That came from corrupted records, so a rule learned from dirty data would approve dirty data.
 It also suggested not-null on unix_time, a field we've decided not to use. That's why a human
 must approve."

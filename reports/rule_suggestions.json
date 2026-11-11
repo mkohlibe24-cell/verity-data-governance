@@ -634,9 +634,9 @@
     "confidence": "medium",
     "would_fail_records": 0,
     "would_fail_pct": 0.0,
-    "status": "pending",
-    "decided_by": null,
-    "decision_reason": null,
+    "status": "rejected",
+    "decided_by": "Muskaan Kohli",
+    "decision_reason": "Range learned from corrupted records",
     "proposed_rule": {
       "name": "Suggested: merch_lat range",
       "table": "transactions",

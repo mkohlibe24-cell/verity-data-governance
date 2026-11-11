@@ -1,7 +1,7 @@
 {
-  "run_id": "RUN-20261111-164200",
+  "run_id": "RUN-20261111-180313",
   "mode": "full",
-  "generated_at": "2026-11-11T16:44:24",
+  "generated_at": "2026-11-11T18:05:17",
   "batch_as_of": "2020-12-31 23:59:59",
   "report_month": "2020-12",
   "data": {
@@ -521,7 +521,7 @@
   },
   "rule_suggestions": {
     "proposed": 21,
-    "pending": 21
+    "pending": 20
   },
   "reconciliation": {
     "controls": 8,
