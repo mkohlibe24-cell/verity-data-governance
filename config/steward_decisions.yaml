@@ -1,0 +1,4 @@
+# Data steward decisions on automatically suggested DQ rules (human-in-the-loop).
+# Written by pipeline/steward.py or the web app. Approved rules are loaded by the DQ engine
+# on the next run. Do not edit by hand: git history of this file is the audit trail.
+decisions: []

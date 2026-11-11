@@ -162,12 +162,12 @@ rules:
     root_cause_hint: Mixed date formats from a regional source system (e.g. DD/MM/YYYY).
     remediation: Standardise to ISO-8601 at source; add a format check to the extract job.
   - id: DQ-V02
-    name: Transaction amount is positive
+    name: Transaction amount is a positive number
     table: transactions
     column: amount
     dimension: Validity
-    check: range
-    params: {min: 0.01}
+    check: expression
+    fail_if: "amt_raw IS NOT NULL AND (amount IS NULL OR amount < 0.01)"
     threshold_pct: 0.0
     severity: critical
     is_cde: true
